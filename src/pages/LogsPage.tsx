@@ -199,17 +199,29 @@ export default function LogsPage() {
                 <p className="text-sm text-muted-foreground">No feed logs yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {cycleFeedLogs.map((log) => (
-                    <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-foreground">{log.water_volume}L</span>
-                        <span className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM d, HH:mm")}</span>
+                  {cycleFeedLogs.map((log) => {
+                    const groups: { label: string; items: { name: string; amount: number; unit: string }[] }[] = [
+                      { label: 'Nutrients', items: log.nutrients || [] },
+                      { label: 'Additives', items: log.additives || [] },
+                      { label: 'Treatments', items: log.treatments || [] },
+                    ];
+                    return (
+                      <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-foreground">{log.water_volume}L</span>
+                          <span className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM d, HH:mm")}</span>
+                        </div>
+                        <div className="mt-1 space-y-0.5">
+                          {groups.filter((g) => g.items.length > 0).map((g) => (
+                            <div key={g.label} className="text-xs text-muted-foreground">
+                              <span className="text-primary font-medium">{g.label}:</span>{" "}
+                              {g.items.map((n) => `${n.name} ${n.amount.toFixed(2)}${n.unit}`).join(" · ")}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {log.nutrients.map((n) => `${n.name}: ${n.amount.toFixed(1)}${n.unit}`).join(" · ")}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
