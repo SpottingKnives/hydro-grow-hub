@@ -96,51 +96,72 @@ export default function FeedSchedulesPage() {
                 </div>
               </div>
 
-              {/* Feed Grid */}
+              {/* Feed Grid - grouped by category */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Nutrient</th>
-                      <th className="text-center py-2 px-2 text-muted-foreground font-medium text-xs">Type</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Item</th>
+                      <th className="text-center py-2 px-2 text-muted-foreground font-medium text-xs">Unit</th>
                       {FEED_STAGES.map((stage) => (
                         <th key={stage} className="text-center py-2 px-2 text-muted-foreground font-medium capitalize text-xs">{stage}</th>
                       ))}
-                      {editingId === schedule.id && <th className="w-10"></th>}
+                      {editingId === schedule.id && <th className="w-24"></th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {schedule.rows.map((row) => (
-                      <tr key={row.nutrient_id} className="border-b border-border/50">
-                        <td className="py-2 px-2 text-foreground font-medium">{row.nutrient_name}</td>
-                        <td className="py-2 px-2 text-center">
-                          <span className="text-xs text-muted-foreground">{row.nutrient_type === 'liquid' ? 'ml/L' : 'g/L'}</span>
-                        </td>
-                        {FEED_STAGES.map((stage) => (
-                          <td key={stage} className="py-2 px-2 text-center">
-                            {editingId === schedule.id ? (
-                              <Input
-                                type="number"
-                                min={0}
-                                step={0.1}
-                                value={row.amounts[stage] || 0}
-                                onChange={(e) => updateAmount(schedule.id, row.nutrient_id, stage, parseFloat(e.target.value) || 0)}
-                                className="w-16 h-8 text-center bg-muted border-border text-xs mx-auto"
-                              />
-                            ) : (
-                              <span className="text-foreground">{row.amounts[stage] || "–"}</span>
-                            )}
-                          </td>
-                        ))}
-                        {editingId === schedule.id && (
-                          <td className="py-2 px-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeRow(schedule.id, row.nutrient_id)}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
+                    {CATEGORY_ORDER.map((cat) => {
+                      const rows = schedule.rows.filter((r) => r.category === cat);
+                      if (rows.length === 0) return null;
+                      return (
+                        <>
+                          <tr key={`hdr-${cat}`} className="bg-muted/30">
+                            <td colSpan={2 + FEED_STAGES.length + (editingId === schedule.id ? 1 : 0)} className="py-1.5 px-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                              {CATEGORY_LABELS[cat]}
+                            </td>
+                          </tr>
+                          {rows.map((row, rowIdx) => (
+                            <tr key={row.nutrient_id} className="border-b border-border/50">
+                              <td className="py-2 px-2 text-foreground font-medium">{row.nutrient_name}</td>
+                              <td className="py-2 px-2 text-center">
+                                <span className="text-xs text-muted-foreground">{formUnit(row.nutrient_type)}</span>
+                              </td>
+                              {FEED_STAGES.map((stage) => (
+                                <td key={stage} className="py-2 px-2 text-center">
+                                  {editingId === schedule.id ? (
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step={0.01}
+                                      value={row.amounts[stage] ?? 0}
+                                      onChange={(e) => updateAmount(schedule.id, row.nutrient_id, stage, parseFloat(e.target.value) || 0)}
+                                      className="w-16 h-8 text-center bg-muted border-border text-xs mx-auto"
+                                    />
+                                  ) : (
+                                    <span className="text-foreground">{row.amounts[stage] || "–"}</span>
+                                  )}
+                                </td>
+                              ))}
+                              {editingId === schedule.id && (
+                                <td className="py-2 px-2">
+                                  <div className="flex items-center gap-0.5 justify-end">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" disabled={rowIdx === 0} onClick={() => reorderFeedScheduleRow(schedule.id, row.nutrient_id, 'up')}>
+                                      <ArrowUp className="w-3 h-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" disabled={rowIdx === rows.length - 1} onClick={() => reorderFeedScheduleRow(schedule.id, row.nutrient_id, 'down')}>
+                                      <ArrowDown className="w-3 h-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeRow(schedule.id, row.nutrient_id)}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -149,9 +170,15 @@ export default function FeedSchedulesPage() {
                 <Select onValueChange={(v) => addRow(schedule.id, v)}>
                   <SelectTrigger className="w-48 bg-muted border-border"><SelectValue placeholder="Add nutrient..." /></SelectTrigger>
                   <SelectContent>
-                    {nutrients.filter((n) => !schedule.rows.find((r) => r.nutrient_id === n.id)).map((n) => (
-                      <SelectItem key={n.id} value={n.id}>{n.name} ({n.type})</SelectItem>
-                    ))}
+                    {CATEGORY_ORDER.flatMap((cat) =>
+                      nutrients
+                        .filter((n) => n.category === cat && !schedule.rows.find((r) => r.nutrient_id === n.id))
+                        .map((n) => (
+                          <SelectItem key={n.id} value={n.id}>
+                            {n.name} · {CATEGORY_LABELS[cat].slice(0, -1)} ({formUnit(n.form)})
+                          </SelectItem>
+                        ))
+                    )}
                   </SelectContent>
                 </Select>
               )}
