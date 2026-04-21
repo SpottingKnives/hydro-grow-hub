@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
-import { FEED_STAGES, type FeedSchedule, type FeedScheduleRow, type NutrientType } from "@/types";
+import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type FeedScheduleRow } from "@/types";
 
 export default function FeedSchedulesPage() {
-  const { feedSchedules, nutrients, addFeedSchedule, updateFeedSchedule, deleteFeedSchedule } = useStore();
+  const { feedSchedules, nutrients, addFeedSchedule, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow } = useStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -34,7 +34,8 @@ export default function FeedSchedulesPage() {
     const newRow: FeedScheduleRow = {
       nutrient_id: nutrientId,
       nutrient_name: nutrient.name,
-      nutrient_type: nutrient.type,
+      nutrient_type: nutrient.form,
+      category: nutrient.category,
       amounts: Object.fromEntries(FEED_STAGES.map((s) => [s, 0])),
     };
     updateFeedSchedule(scheduleId, { rows: [...schedule.rows, newRow] });
