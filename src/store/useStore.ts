@@ -157,6 +157,21 @@ export const useStore = create<AppState>()(
         })),
       deleteFeedSchedule: (id) =>
         set((s) => ({ feedSchedules: s.feedSchedules.filter((f) => f.id !== id) })),
+      reorderFeedScheduleRow: (scheduleId, nutrientId, direction) =>
+        set((s) => ({
+          feedSchedules: s.feedSchedules.map((f) => {
+            if (f.id !== scheduleId) return f;
+            const idx = f.rows.findIndex((r) => r.nutrient_id === nutrientId);
+            if (idx < 0) return f;
+            const target = direction === 'up' ? idx - 1 : idx + 1;
+            if (target < 0 || target >= f.rows.length) return f;
+            // Only reorder within same category
+            if (f.rows[target].category !== f.rows[idx].category) return f;
+            const rows = [...f.rows];
+            [rows[idx], rows[target]] = [rows[target], rows[idx]];
+            return { ...f, rows };
+          }),
+        })),
 
       addNutrient: (nutrient) => set((s) => ({ nutrients: [...s.nutrients, nutrient] })),
       deleteNutrient: (id) => set((s) => ({ nutrients: s.nutrients.filter((n) => n.id !== id) })),
