@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { CATEGORY_ORDER, CATEGORY_LABELS, formUnitShort, type NutrientCategory } from "@/types";
 
 const PARAMS = ["temp", "humidity", "pH", "EC", "CO2", "VPD"];
 
@@ -38,27 +39,35 @@ export default function LogsPage() {
     if (!selectedCycleId || !feedForm.water_volume) return;
     const schedule = feedSchedules.find((f) => f.id === selectedCycle?.feed_schedule_id);
     const stage = selectedCycle?.current_stage || "veg";
-    const nutrientAmounts = (schedule?.rows || []).map((row) => ({
+    const waterVol = parseFloat(feedForm.water_volume);
+    const mapRow = (row: typeof schedule extends infer T ? any : any) => ({
       nutrient_id: row.nutrient_id,
       name: row.nutrient_name,
-      amount: (row.amounts[stage] || 0) * parseFloat(feedForm.water_volume),
-      unit: row.nutrient_type === "liquid" ? "ml" : "g",
-    }));
+      amount: (row.amounts[stage] || 0) * waterVol,
+      unit: formUnitShort(row.nutrient_type),
+    });
+    const rows = schedule?.rows || [];
+    const nutrientsArr = rows.filter((r) => r.category === 'nutrient').map(mapRow);
+    const additivesArr = rows.filter((r) => r.category === 'additive').map(mapRow);
+    const treatmentsArr = rows.filter((r) => r.category === 'treatment').map(mapRow);
 
     const log = {
       id: crypto.randomUUID(),
       grow_cycle_id: selectedCycleId,
       date: new Date().toISOString(),
-      water_volume: parseFloat(feedForm.water_volume),
-      nutrients: nutrientAmounts,
+      water_volume: waterVol,
+      nutrients: nutrientsArr,
+      additives: additivesArr,
+      treatments: treatmentsArr,
     };
     addFeedLog(log);
+    const all = [...nutrientsArr, ...additivesArr, ...treatmentsArr];
     addEvent({
       id: crypto.randomUUID(),
       grow_cycle_id: selectedCycleId,
       type: "feed",
       title: `Fed ${feedForm.water_volume}L`,
-      description: nutrientAmounts.map((n) => `${n.name}: ${n.amount.toFixed(1)}${n.unit}`).join(", "),
+      description: all.map((n) => `${n.name}: ${n.amount.toFixed(2)}${n.unit}`).join(", "),
       date: new Date().toISOString(),
     });
     setFeedForm({ water_volume: "" });
