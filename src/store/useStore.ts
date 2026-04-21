@@ -6,6 +6,48 @@ import type {
 } from '@/types';
 import { FEED_STAGES } from '@/types';
 
+const DTR_STAGES = ['veg', 'stretch', 'stack', 'swell', 'ripen'] as const;
+const buildAmounts = (vals: number[]) =>
+  Object.fromEntries(DTR_STAGES.map((s, i) => [s, vals[i]])) as Record<string, number>;
+
+const buildDTRSchedule = (
+  id: string,
+  name: string,
+  data: Array<{ nutrient_id: string; nutrient_name: string; nutrient_type: 'dry' | 'liquid'; category: 'nutrient' | 'additive' | 'treatment'; vals: number[] }>
+): FeedSchedule => ({
+  id,
+  name,
+  rows: data.map((d) => ({
+    nutrient_id: d.nutrient_id,
+    nutrient_name: d.nutrient_name,
+    nutrient_type: d.nutrient_type,
+    category: d.category,
+    amounts: buildAmounts(d.vals),
+  })),
+});
+
+const DTR_ROWS_STD = [
+  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.4, 1.6, 1.1, 0.9, 0.9] },
+  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.7, 2.0, 1.3, 1.1, 1.0] },
+  { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0.9, 1.1, 0.7, 0.6, 0.5] },
+  { nutrient_id: 'front-row-si', nutrient_name: 'Front Row Si', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
+  { nutrient_id: 'phoszyme', nutrient_name: 'PhosZyme', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
+  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.03, 0.03, 0.03, 0.03, 0.03] },
+];
+const DTR_ROWS_HIGH = [
+  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0, 1.4, 1.1, 0.9, 0.5] },
+  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0, 1.7, 1.4, 1.1, 0.6] },
+  { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0, 0.9, 0.8, 0.6, 0.6] },
+  { nutrient_id: 'front-row-si', nutrient_name: 'Front Row Si', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
+  { nutrient_id: 'phoszyme', nutrient_name: 'PhosZyme', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
+  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.03, 0.03, 0.03, 0.03, 0.03] },
+];
+
+const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [
+  buildDTRSchedule('dtr-standard', 'DTR Standard', DTR_ROWS_STD),
+  buildDTRSchedule('dtr-high-strength', 'DTR High Strength', DTR_ROWS_HIGH),
+];
+
 interface AppState {
   growCycles: GrowCycle[];
   stageHistory: StageHistory[];
@@ -69,7 +111,7 @@ export const useStore = create<AppState>()(
       growCycles: [],
       stageHistory: [],
       environments: [],
-      feedSchedules: [],
+      feedSchedules: DEFAULT_FEED_SCHEDULES,
       nutrients: [
         { id: 'part-a', name: 'Part A', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
         { id: 'part-b', name: 'Part B', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
