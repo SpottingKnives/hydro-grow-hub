@@ -238,6 +238,30 @@ export const useStore = create<AppState>()(
       deleteStrain: (id) => set((s) => ({ strains: s.strains.filter((s2) => s2.id !== id) })),
       addBreeder: (breeder) => set((s) => ({ breeders: [...s.breeders, breeder] })),
     }),
-    { name: 'hydro-grow-os' }
+    {
+      name: 'hydro-grow-os',
+      version: 2,
+      migrate: (persistedState: any, version) => {
+        if (!persistedState) return persistedState;
+        if (version < 2) {
+          // Replace legacy nutrients with new catalog
+          persistedState.nutrients = [
+            { id: 'part-a', name: 'Part A', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
+            { id: 'part-b', name: 'Part B', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
+            { id: 'bloom', name: 'Bloom', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
+            { id: 'front-row-si', name: 'Front Row Si', brand: 'Front Row', type: 'liquid', form: 'liquid', category: 'additive', unit: 'ml/L' },
+            { id: 'phoszyme', name: 'PhosZyme', brand: 'General', type: 'liquid', form: 'liquid', category: 'additive', unit: 'ml/L' },
+            { id: 'cal-hypo', name: 'Calcium Hypochlorite', brand: 'General', type: 'dry', form: 'dry', category: 'treatment', unit: 'g/L' },
+          ];
+          // Add DTR schedules if not already there
+          const existing = new Set((persistedState.feedSchedules || []).map((f: any) => f.id));
+          persistedState.feedSchedules = [
+            ...DEFAULT_FEED_SCHEDULES.filter((f) => !existing.has(f.id)),
+            ...(persistedState.feedSchedules || []),
+          ];
+        }
+        return persistedState;
+      },
+    }
   )
 );
