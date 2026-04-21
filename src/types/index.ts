@@ -2,6 +2,7 @@ export type GrowStage = 'nursery' | 'veg' | 'stretch' | 'stack' | 'swell' | 'rip
 export type GrowStatus = 'active' | 'completed' | 'archived';
 export type EventType = 'feed' | 'water' | 'transplant' | 'issue' | 'note' | 'stage_change';
 export type NutrientType = 'dry' | 'liquid';
+export type NutrientCategory = 'nutrient' | 'additive' | 'treatment';
 export type Priority = 'low' | 'medium' | 'high';
 
 export interface Breeder {
@@ -56,6 +57,8 @@ export interface Nutrient {
   brand: string;
   type: NutrientType;
   unit: string;
+  category: NutrientCategory;
+  form: NutrientType;
 }
 
 export interface FeedSchedule {
@@ -68,6 +71,7 @@ export interface FeedScheduleRow {
   nutrient_id: string;
   nutrient_name: string;
   nutrient_type: NutrientType;
+  category: NutrientCategory;
   amounts: Record<string, number>; // stage -> amount
 }
 
@@ -116,7 +120,18 @@ export interface FeedLog {
   date: string;
   water_volume: number;
   nutrients: { nutrient_id: string; name: string; amount: number; unit: string }[];
+  additives?: { nutrient_id: string; name: string; amount: number; unit: string }[];
+  treatments?: { nutrient_id: string; name: string; amount: number; unit: string }[];
 }
+
+export const CATEGORY_ORDER: NutrientCategory[] = ['nutrient', 'additive', 'treatment'];
+export const CATEGORY_LABELS: Record<NutrientCategory, string> = {
+  nutrient: 'Nutrients',
+  additive: 'Additives',
+  treatment: 'Treatments',
+};
+export const formUnit = (form: NutrientType) => (form === 'liquid' ? 'ml/L' : 'g/L');
+export const formUnitShort = (form: NutrientType) => (form === 'liquid' ? 'ml' : 'g');
 
 export const STAGES: GrowStage[] = ['nursery', 'veg', 'stretch', 'stack', 'swell', 'ripen', 'dry', 'cure'];
 export const FEED_STAGES: GrowStage[] = ['veg', 'stretch', 'stack', 'swell', 'ripen'];

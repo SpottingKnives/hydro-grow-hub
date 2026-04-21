@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { CATEGORY_ORDER, CATEGORY_LABELS, formUnitShort, type NutrientCategory } from "@/types";
 
 const PARAMS = ["temp", "humidity", "pH", "EC", "CO2", "VPD"];
 
@@ -38,27 +39,35 @@ export default function LogsPage() {
     if (!selectedCycleId || !feedForm.water_volume) return;
     const schedule = feedSchedules.find((f) => f.id === selectedCycle?.feed_schedule_id);
     const stage = selectedCycle?.current_stage || "veg";
-    const nutrientAmounts = (schedule?.rows || []).map((row) => ({
+    const waterVol = parseFloat(feedForm.water_volume);
+    const mapRow = (row: typeof schedule extends infer T ? any : any) => ({
       nutrient_id: row.nutrient_id,
       name: row.nutrient_name,
-      amount: (row.amounts[stage] || 0) * parseFloat(feedForm.water_volume),
-      unit: row.nutrient_type === "liquid" ? "ml" : "g",
-    }));
+      amount: (row.amounts[stage] || 0) * waterVol,
+      unit: formUnitShort(row.nutrient_type),
+    });
+    const rows = schedule?.rows || [];
+    const nutrientsArr = rows.filter((r) => r.category === 'nutrient').map(mapRow);
+    const additivesArr = rows.filter((r) => r.category === 'additive').map(mapRow);
+    const treatmentsArr = rows.filter((r) => r.category === 'treatment').map(mapRow);
 
     const log = {
       id: crypto.randomUUID(),
       grow_cycle_id: selectedCycleId,
       date: new Date().toISOString(),
-      water_volume: parseFloat(feedForm.water_volume),
-      nutrients: nutrientAmounts,
+      water_volume: waterVol,
+      nutrients: nutrientsArr,
+      additives: additivesArr,
+      treatments: treatmentsArr,
     };
     addFeedLog(log);
+    const all = [...nutrientsArr, ...additivesArr, ...treatmentsArr];
     addEvent({
       id: crypto.randomUUID(),
       grow_cycle_id: selectedCycleId,
       type: "feed",
       title: `Fed ${feedForm.water_volume}L`,
-      description: nutrientAmounts.map((n) => `${n.name}: ${n.amount.toFixed(1)}${n.unit}`).join(", "),
+      description: all.map((n) => `${n.name}: ${n.amount.toFixed(2)}${n.unit}`).join(", "),
       date: new Date().toISOString(),
     });
     setFeedForm({ water_volume: "" });
@@ -142,21 +151,40 @@ export default function LogsPage() {
                       <label className="text-xs text-muted-foreground">Water Volume (L)</label>
                       <Input type="number" min={0} step={0.5} value={feedForm.water_volume} onChange={(e) => setFeedForm({ water_volume: e.target.value })} placeholder="0" className="w-32 bg-muted border-border" />
                     </div>
-                    {waterVol > 0 && (
-                      <div className="space-y-1">
-                        {schedule.rows.map((row) => {
-                          const perL = row.amounts[stage] || 0;
-                          const total = perL * waterVol;
-                          const unit = row.nutrient_type === "liquid" ? "ml" : "g";
-                          return (
-                            <div key={row.nutrient_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                              <span className="text-foreground">{row.nutrient_name}</span>
-                              <span className="font-semibold text-primary">{total.toFixed(1)} {unit}</span>
+                    {waterVol > 0 && (() => {
+                      const activeRows = schedule.rows.filter((r) => (r.amounts[stage] || 0) > 0);
+                      const hasPhos = activeRows.some((r) => r.nutrient_id === 'phoszyme');
+                      const hasHypo = activeRows.some((r) => r.nutrient_id === 'cal-hypo');
+                      return (
+                        <div className="space-y-3">
+                          {hasPhos && hasHypo && (
+                            <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-sm text-destructive">
+                              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                              <span>Steriliser may reduce enzyme effectiveness</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          )}
+                          {CATEGORY_ORDER.map((cat) => {
+                            const rows = activeRows.filter((r) => r.category === cat);
+                            if (rows.length === 0) return null;
+                            return (
+                              <div key={cat} className="space-y-1">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-primary px-1">{CATEGORY_LABELS[cat]}</div>
+                                {rows.map((row) => {
+                                  const total = (row.amounts[stage] || 0) * waterVol;
+                                  const unit = formUnitShort(row.nutrient_type);
+                                  return (
+                                    <div key={row.nutrient_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                                      <span className="text-foreground">{row.nutrient_name}</span>
+                                      <span className="font-semibold text-primary">{total.toFixed(2)} {unit}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                     <Button onClick={logFeed} disabled={waterVol <= 0} className="gradient-primary text-primary-foreground">
                       Log Feed
                     </Button>
@@ -171,17 +199,29 @@ export default function LogsPage() {
                 <p className="text-sm text-muted-foreground">No feed logs yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {cycleFeedLogs.map((log) => (
-                    <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-foreground">{log.water_volume}L</span>
-                        <span className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM d, HH:mm")}</span>
+                  {cycleFeedLogs.map((log) => {
+                    const groups: { label: string; items: { name: string; amount: number; unit: string }[] }[] = [
+                      { label: 'Nutrients', items: log.nutrients || [] },
+                      { label: 'Additives', items: log.additives || [] },
+                      { label: 'Treatments', items: log.treatments || [] },
+                    ];
+                    return (
+                      <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-foreground">{log.water_volume}L</span>
+                          <span className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM d, HH:mm")}</span>
+                        </div>
+                        <div className="mt-1 space-y-0.5">
+                          {groups.filter((g) => g.items.length > 0).map((g) => (
+                            <div key={g.label} className="text-xs text-muted-foreground">
+                              <span className="text-primary font-medium">{g.label}:</span>{" "}
+                              {g.items.map((n) => `${n.name} ${n.amount.toFixed(2)}${n.unit}`).join(" · ")}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {log.nutrients.map((n) => `${n.name}: ${n.amount.toFixed(1)}${n.unit}`).join(" · ")}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
