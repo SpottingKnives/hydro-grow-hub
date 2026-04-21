@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
   GrowCycle, StageHistory, Environment, FeedSchedule, GrowTask,
-  GrowEvent, ParameterLog, AlertRule, FeedLog, Nutrient, Strain, Breeder
+  GrowEvent, ParameterLog, AlertRule, FeedLog, Nutrient, Strain, Breeder, FeedScheduleRow
 } from '@/types';
+import { FEED_STAGES } from '@/types';
 
 interface AppState {
   growCycles: GrowCycle[];
@@ -34,6 +35,7 @@ interface AppState {
   addFeedSchedule: (schedule: FeedSchedule) => void;
   updateFeedSchedule: (id: string, updates: Partial<FeedSchedule>) => void;
   deleteFeedSchedule: (id: string) => void;
+  reorderFeedScheduleRow: (scheduleId: string, nutrientId: string, direction: 'up' | 'down') => void;
 
   // Nutrients
   addNutrient: (nutrient: Nutrient) => void;
