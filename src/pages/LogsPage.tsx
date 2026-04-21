@@ -151,21 +151,40 @@ export default function LogsPage() {
                       <label className="text-xs text-muted-foreground">Water Volume (L)</label>
                       <Input type="number" min={0} step={0.5} value={feedForm.water_volume} onChange={(e) => setFeedForm({ water_volume: e.target.value })} placeholder="0" className="w-32 bg-muted border-border" />
                     </div>
-                    {waterVol > 0 && (
-                      <div className="space-y-1">
-                        {schedule.rows.map((row) => {
-                          const perL = row.amounts[stage] || 0;
-                          const total = perL * waterVol;
-                          const unit = row.nutrient_type === "liquid" ? "ml" : "g";
-                          return (
-                            <div key={row.nutrient_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                              <span className="text-foreground">{row.nutrient_name}</span>
-                              <span className="font-semibold text-primary">{total.toFixed(1)} {unit}</span>
+                    {waterVol > 0 && (() => {
+                      const activeRows = schedule.rows.filter((r) => (r.amounts[stage] || 0) > 0);
+                      const hasPhos = activeRows.some((r) => r.nutrient_id === 'phoszyme');
+                      const hasHypo = activeRows.some((r) => r.nutrient_id === 'cal-hypo');
+                      return (
+                        <div className="space-y-3">
+                          {hasPhos && hasHypo && (
+                            <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-sm text-destructive">
+                              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                              <span>Steriliser may reduce enzyme effectiveness</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          )}
+                          {CATEGORY_ORDER.map((cat) => {
+                            const rows = activeRows.filter((r) => r.category === cat);
+                            if (rows.length === 0) return null;
+                            return (
+                              <div key={cat} className="space-y-1">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-primary px-1">{CATEGORY_LABELS[cat]}</div>
+                                {rows.map((row) => {
+                                  const total = (row.amounts[stage] || 0) * waterVol;
+                                  const unit = formUnitShort(row.nutrient_type);
+                                  return (
+                                    <div key={row.nutrient_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                                      <span className="text-foreground">{row.nutrient_name}</span>
+                                      <span className="font-semibold text-primary">{total.toFixed(2)} {unit}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                     <Button onClick={logFeed} disabled={waterVol <= 0} className="gradient-primary text-primary-foreground">
                       Log Feed
                     </Button>
