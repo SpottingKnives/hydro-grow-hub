@@ -257,7 +257,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'hydro-grow-os',
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version) => {
         if (!persistedState) return persistedState;
         if (version < 2) {
@@ -276,6 +276,18 @@ export const useStore = create<AppState>()(
             ...DEFAULT_FEED_SCHEDULES.filter((f) => !existing.has(f.id)),
             ...(persistedState.feedSchedules || []),
           ];
+        }
+        if (version < 3) {
+          // Refresh DTR schedules with updated values + EC targets
+          const defaults = new Map(DEFAULT_FEED_SCHEDULES.map((f) => [f.id, f]));
+          persistedState.feedSchedules = (persistedState.feedSchedules || []).map((f: any) =>
+            defaults.has(f.id) ? defaults.get(f.id) : f
+          );
+          // Add any missing defaults
+          const ids = new Set(persistedState.feedSchedules.map((f: any) => f.id));
+          for (const def of DEFAULT_FEED_SCHEDULES) {
+            if (!ids.has(def.id)) persistedState.feedSchedules.push(def);
+          }
         }
         return persistedState;
       },
