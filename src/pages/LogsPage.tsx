@@ -146,11 +146,23 @@ export default function LogsPage() {
                 if (!schedule) return null;
                 const stage = selectedCycle.current_stage;
                 const waterVol = parseFloat(feedForm.water_volume) || 0;
+                const ecTarget = schedule.ec_targets?.[stage];
                 return (
                   <div className="space-y-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Water Volume (L)</label>
-                      <Input type="number" min={0} step={0.5} value={feedForm.water_volume} onChange={(e) => setFeedForm({ water_volume: e.target.value })} placeholder="0" className="w-32 bg-muted border-border" />
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Water Volume (L)</label>
+                        <Input type="number" min={0} step={0.5} value={feedForm.water_volume} onChange={(e) => setFeedForm({ ...feedForm, water_volume: e.target.value })} placeholder="0" className="w-32 bg-muted border-border" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">EC Measured</label>
+                        <Input type="number" min={0} step={0.01} value={feedForm.ec_measured} onChange={(e) => setFeedForm({ ...feedForm, ec_measured: e.target.value })} placeholder="–" className="w-28 bg-muted border-border" />
+                      </div>
+                      {ecTarget && (
+                        <div className="text-xs text-muted-foreground pb-2">
+                          Target EC: <span className="text-primary font-semibold">{ecTarget.min}–{ecTarget.max}</span>
+                        </div>
+                      )}
                     </div>
                     {waterVol > 0 && (() => {
                       const activeRows = schedule.rows.filter((r) => (r.amounts[stage] || 0) > 0);
