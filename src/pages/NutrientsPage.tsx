@@ -96,8 +96,8 @@ export default function NutrientsPage() {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(n)}>
-                          <Pencil className="w-4 h-4" />
+                        <Button variant="ghost" size="sm" className="h-8" onClick={() => openEdit(n)}>
+                          <Pencil className="w-4 h-4 mr-1" /> Edit
                         </Button>
                         <Button
                           variant="ghost"
