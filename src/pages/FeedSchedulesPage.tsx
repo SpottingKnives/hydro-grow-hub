@@ -134,7 +134,13 @@ export default function FeedSchedulesPage() {
       ) : (
         <div className="space-y-6">
           {[...feedSchedules]
-            .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
+            .sort((a, b) => {
+              // Newest first; schedules without created_at sort to the bottom
+              if (!a.created_at && !b.created_at) return 0;
+              if (!a.created_at) return 1;
+              if (!b.created_at) return -1;
+              return b.created_at.localeCompare(a.created_at);
+            })
             .map((schedule) => (
             <div key={schedule.id} className="glass-card p-4 space-y-4">
               <div className="flex items-center justify-between">
