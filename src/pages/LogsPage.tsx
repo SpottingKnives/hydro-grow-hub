@@ -221,7 +221,12 @@ export default function LogsPage() {
                     return (
                       <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
                         <div className="flex justify-between">
-                          <span className="font-medium text-foreground">{log.water_volume}L</span>
+                          <span className="font-medium text-foreground">
+                            {log.water_volume}L
+                            {log.ec_measured != null && (
+                              <span className="ml-2 text-xs text-muted-foreground">EC <span className="text-primary font-semibold">{log.ec_measured}</span></span>
+                            )}
+                          </span>
                           <span className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM d, HH:mm")}</span>
                         </div>
                         <div className="mt-1 space-y-0.5">
