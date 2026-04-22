@@ -13,7 +13,8 @@ const buildAmounts = (vals: number[]) =>
 const buildDTRSchedule = (
   id: string,
   name: string,
-  data: Array<{ nutrient_id: string; nutrient_name: string; nutrient_type: 'dry' | 'liquid'; category: 'nutrient' | 'additive' | 'treatment'; vals: number[] }>
+  data: Array<{ nutrient_id: string; nutrient_name: string; nutrient_type: 'dry' | 'liquid'; category: 'nutrient' | 'additive' | 'treatment'; vals: number[] }>,
+  ec_targets?: FeedSchedule['ec_targets']
 ): FeedSchedule => ({
   id,
   name,
@@ -24,28 +25,44 @@ const buildDTRSchedule = (
     category: d.category,
     amounts: buildAmounts(d.vals),
   })),
+  ec_targets,
 });
 
 const DTR_ROWS_STD = [
-  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.4, 1.6, 1.1, 0.9, 0.9] },
-  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.7, 2.0, 1.3, 1.1, 1.0] },
+  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.4, 1.5, 1.1, 0.9, 0.9] },
+  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.7, 1.9, 1.3, 1.1, 1.0] },
   { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0.9, 1.1, 0.7, 0.6, 0.5] },
   { nutrient_id: 'front-row-si', nutrient_name: 'Front Row Si', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
   { nutrient_id: 'phoszyme', nutrient_name: 'PhosZyme', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
-  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.03, 0.03, 0.03, 0.03, 0.03] },
+  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.0035, 0.0035, 0.0035, 0.0035, 0.0035] },
 ];
 const DTR_ROWS_HIGH = [
-  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0, 1.4, 1.1, 0.9, 0.5] },
-  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0, 1.7, 1.4, 1.1, 0.6] },
-  { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0, 0.9, 0.8, 0.6, 0.6] },
+  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.4, 1.4, 1.1, 0.9, 0.5] },
+  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.7, 1.7, 1.4, 1.1, 0.6] },
+  { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0.9, 0.9, 0.8, 0.6, 0.6] },
   { nutrient_id: 'front-row-si', nutrient_name: 'Front Row Si', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
   { nutrient_id: 'phoszyme', nutrient_name: 'PhosZyme', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
-  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.03, 0.03, 0.03, 0.03, 0.03] },
+  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.0035, 0.0035, 0.0035, 0.0035, 0.0035] },
 ];
 
+const DTR_EC_STD: FeedSchedule['ec_targets'] = {
+  veg: { min: 1.6, max: 1.8 },
+  stretch: { min: 2.0, max: 2.2 },
+  stack: { min: 1.6, max: 1.8 },
+  swell: { min: 1.4, max: 1.6 },
+  ripen: { min: 1.2, max: 1.4 },
+};
+const DTR_EC_HIGH: FeedSchedule['ec_targets'] = {
+  veg: { min: 1.6, max: 1.8 },
+  stretch: { min: 2.2, max: 2.4 },
+  stack: { min: 1.8, max: 2.0 },
+  swell: { min: 1.6, max: 1.8 },
+  ripen: { min: 1.2, max: 1.4 },
+};
+
 const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [
-  buildDTRSchedule('dtr-standard', 'DTR Standard', DTR_ROWS_STD),
-  buildDTRSchedule('dtr-high-strength', 'DTR High Strength', DTR_ROWS_HIGH),
+  buildDTRSchedule('dtr-standard', 'DTR Standard', DTR_ROWS_STD, DTR_EC_STD),
+  buildDTRSchedule('dtr-high-strength', 'DTR High Strength', DTR_ROWS_HIGH, DTR_EC_HIGH),
 ];
 
 interface AppState {
