@@ -24,6 +24,7 @@ export default function FeedSchedulesPage() {
       id: crypto.randomUUID(),
       name: newName,
       rows: [],
+      created_at: new Date().toISOString(),
     };
     addFeedSchedule(schedule);
     setNewName("");
@@ -126,7 +127,9 @@ export default function FeedSchedulesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {feedSchedules.map((schedule) => (
+          {[...feedSchedules]
+            .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
+            .map((schedule) => (
             <div key={schedule.id} className="glass-card p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-foreground text-lg">{schedule.name}</h3>
