@@ -10,6 +10,7 @@ import GrowCycleDetailPage from "@/pages/GrowCycleDetailPage";
 import FeedSchedulesPage from "@/pages/FeedSchedulesPage";
 import EnvironmentsPage from "@/pages/EnvironmentsPage";
 import StrainsPage from "@/pages/StrainsPage";
+import NutrientsPage from "@/pages/NutrientsPage";
 import TasksPage from "@/pages/TasksPage";
 import LogsPage from "@/pages/LogsPage";
 import NotFound from "@/pages/NotFound";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/feeds" element={<FeedSchedulesPage />} />
             <Route path="/environments" element={<EnvironmentsPage />} />
             <Route path="/strains" element={<StrainsPage />} />
+            <Route path="/nutrients" element={<NutrientsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="*" element={<NotFound />} />
