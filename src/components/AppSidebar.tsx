@@ -1,5 +1,5 @@
 import {
-  Home, Beaker, Leaf, ListTodo, BarChart3, Calendar, Sprout, Settings
+  Home, Beaker, Leaf, ListTodo, BarChart3, Calendar, Sprout, Settings, FlaskConical
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -13,6 +13,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Grow Cycles", url: "/grows", icon: Sprout },
   { title: "Feed Schedules", url: "/feeds", icon: Beaker },
+  { title: "Nutrients & Additives", url: "/nutrients", icon: FlaskConical },
   { title: "Environments", url: "/environments", icon: Leaf },
   { title: "Plants & Strains", url: "/strains", icon: Leaf },
   { title: "Tasks", url: "/tasks", icon: ListTodo },
