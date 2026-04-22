@@ -112,12 +112,37 @@ export default function FeedSchedulesPage() {
                       <th className="text-left py-2 px-2 text-muted-foreground font-medium">Item</th>
                       <th className="text-center py-2 px-2 text-muted-foreground font-medium text-xs">Unit</th>
                       {FEED_STAGES.map((stage) => (
-                        <th key={stage} className="text-center py-2 px-2 text-muted-foreground font-medium capitalize text-xs">{stage}</th>
+                        <th key={stage} className="text-center py-2 px-2 text-muted-foreground font-medium capitalize text-xs">
+                          <div>{stage}</div>
+                          {schedule.ec_targets?.[stage] && (
+                            <div className="text-[10px] font-normal text-primary/80 normal-case mt-0.5">
+                              EC {schedule.ec_targets[stage]!.min}–{schedule.ec_targets[stage]!.max}
+                            </div>
+                          )}
+                        </th>
                       ))}
                       {editingId === schedule.id && <th className="w-24"></th>}
                     </tr>
                   </thead>
                   <tbody>
+                    {editingId === schedule.id && (
+                      <tr className="border-b border-border/50 bg-muted/20">
+                        <td className="py-2 px-2 text-xs font-semibold uppercase tracking-wide text-primary" colSpan={2}>EC Target</td>
+                        {FEED_STAGES.map((stage) => {
+                          const t = schedule.ec_targets?.[stage] ?? { min: 0, max: 0 };
+                          return (
+                            <td key={stage} className="py-2 px-1 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Input type="number" min={0} step={0.1} value={t.min} onChange={(e) => updateEcTarget(schedule.id, stage, 'min', parseFloat(e.target.value) || 0)} className="w-12 h-7 text-center bg-muted border-border text-xs px-1" />
+                                <span className="text-muted-foreground text-xs">–</span>
+                                <Input type="number" min={0} step={0.1} value={t.max} onChange={(e) => updateEcTarget(schedule.id, stage, 'max', parseFloat(e.target.value) || 0)} className="w-12 h-7 text-center bg-muted border-border text-xs px-1" />
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td></td>
+                      </tr>
+                    )}
                     {CATEGORY_ORDER.map((cat) => {
                       const rows = schedule.rows.filter((r) => r.category === cat);
                       if (rows.length === 0) return null;
