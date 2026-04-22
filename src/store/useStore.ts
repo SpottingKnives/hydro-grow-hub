@@ -98,6 +98,7 @@ interface AppState {
 
   // Nutrients
   addNutrient: (nutrient: Nutrient) => void;
+  updateNutrient: (id: string, updates: Partial<Nutrient>) => void;
   deleteNutrient: (id: string) => void;
 
   // Tasks
