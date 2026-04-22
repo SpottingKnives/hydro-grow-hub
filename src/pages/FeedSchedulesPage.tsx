@@ -61,6 +61,37 @@ export default function FeedSchedulesPage() {
     updateFeedSchedule(scheduleId, { rows: schedule.rows.filter((r) => r.nutrient_id !== nutrientId) });
   };
 
+  const openAddRow = (scheduleId: string, category: NutrientCategory) => {
+    setAddRowFor({ scheduleId, category });
+    setPickedId("");
+    setCreateMode(false);
+    setCreateName("");
+    setCreateForm(category === "additive" ? "liquid" : "dry");
+  };
+
+  const confirmAddRow = () => {
+    if (!addRowFor) return;
+    const { scheduleId, category } = addRowFor;
+    let nutrientId = pickedId;
+    if (createMode) {
+      if (!createName.trim()) return;
+      const newN: Nutrient = {
+        id: crypto.randomUUID(),
+        name: createName.trim(),
+        brand: "",
+        category,
+        form: createForm,
+        type: createForm,
+        unit: createForm === "liquid" ? "ml/L" : "g/L",
+      };
+      addNutrient(newN);
+      nutrientId = newN.id;
+    }
+    if (!nutrientId) return;
+    addRow(scheduleId, nutrientId);
+    setAddRowFor(null);
+  };
+
   const updateEcTarget = (scheduleId: string, stage: GrowStage, key: 'min' | 'max', value: number) => {
     const schedule = feedSchedules.find((s) => s.id === scheduleId);
     if (!schedule) return;
