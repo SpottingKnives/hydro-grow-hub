@@ -32,19 +32,24 @@ export default function FeedSchedulesPage() {
     setEditingId(schedule.id);
   };
 
-  const addRow = (scheduleId: string, nutrientId: string) => {
-    const nutrient = nutrients.find((n) => n.id === nutrientId);
-    if (!nutrient) return;
-    const schedule = feedSchedules.find((s) => s.id === scheduleId);
+  const addRowWithNutrient = (scheduleId: string, nutrient: Pick<Nutrient, 'id' | 'name' | 'form' | 'category'>) => {
+    const schedule = useStore.getState().feedSchedules.find((s) => s.id === scheduleId);
     if (!schedule) return;
+    if (schedule.rows.find((r) => r.nutrient_id === nutrient.id)) return;
     const newRow: FeedScheduleRow = {
-      nutrient_id: nutrientId,
+      nutrient_id: nutrient.id,
       nutrient_name: nutrient.name,
       nutrient_type: nutrient.form,
       category: nutrient.category,
       amounts: Object.fromEntries(FEED_STAGES.map((s) => [s, 0])),
     };
     updateFeedSchedule(scheduleId, { rows: [...schedule.rows, newRow] });
+  };
+
+  const addRow = (scheduleId: string, nutrientId: string) => {
+    const nutrient = nutrients.find((n) => n.id === nutrientId);
+    if (!nutrient) return;
+    addRowWithNutrient(scheduleId, nutrient);
   };
 
   const updateAmount = (scheduleId: string, nutrientId: string, stage: string, value: number) => {
@@ -73,7 +78,6 @@ export default function FeedSchedulesPage() {
   const confirmAddRow = () => {
     if (!addRowFor) return;
     const { scheduleId, category } = addRowFor;
-    let nutrientId = pickedId;
     if (createMode) {
       if (!createName.trim()) return;
       const newN: Nutrient = {
@@ -86,10 +90,12 @@ export default function FeedSchedulesPage() {
         unit: createForm === "liquid" ? "ml/L" : "g/L",
       };
       addNutrient(newN);
-      nutrientId = newN.id;
+      // Use the object directly — store update is async relative to closure `nutrients`
+      addRowWithNutrient(scheduleId, newN);
+    } else {
+      if (!pickedId) return;
+      addRow(scheduleId, pickedId);
     }
-    if (!nutrientId) return;
-    addRow(scheduleId, nutrientId);
     setAddRowFor(null);
   };
 
