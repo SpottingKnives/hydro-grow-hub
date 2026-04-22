@@ -5,13 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type FeedScheduleRow, type GrowStage } from "@/types";
+import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type FeedScheduleRow, type GrowStage, type NutrientCategory, type Nutrient, type NutrientType } from "@/types";
 
 export default function FeedSchedulesPage() {
-  const { feedSchedules, nutrients, addFeedSchedule, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow } = useStore();
+  const { feedSchedules, nutrients, addFeedSchedule, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow, addNutrient } = useStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [addRowFor, setAddRowFor] = useState<{ scheduleId: string; category: NutrientCategory } | null>(null);
+  const [pickedId, setPickedId] = useState<string>("");
+  const [createMode, setCreateMode] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createForm, setCreateForm] = useState<NutrientType>("dry");
 
   const handleCreate = () => {
     if (!newName) return;
