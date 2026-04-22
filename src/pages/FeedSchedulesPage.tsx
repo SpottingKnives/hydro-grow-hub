@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type FeedScheduleRow } from "@/types";
+import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type FeedScheduleRow, type GrowStage } from "@/types";
 
 export default function FeedSchedulesPage() {
   const { feedSchedules, nutrients, addFeedSchedule, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow } = useStore();
@@ -54,6 +54,14 @@ export default function FeedSchedulesPage() {
     const schedule = feedSchedules.find((s) => s.id === scheduleId);
     if (!schedule) return;
     updateFeedSchedule(scheduleId, { rows: schedule.rows.filter((r) => r.nutrient_id !== nutrientId) });
+  };
+
+  const updateEcTarget = (scheduleId: string, stage: GrowStage, key: 'min' | 'max', value: number) => {
+    const schedule = feedSchedules.find((s) => s.id === scheduleId);
+    if (!schedule) return;
+    const current = schedule.ec_targets?.[stage] ?? { min: 0, max: 0 };
+    const ec_targets = { ...(schedule.ec_targets || {}), [stage]: { ...current, [key]: value } };
+    updateFeedSchedule(scheduleId, { ec_targets });
   };
 
   return (
