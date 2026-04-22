@@ -15,7 +15,7 @@ export default function LogsPage() {
   const { growCycles, parameterLogs, feedLogs, nutrients, feedSchedules, addParameterLog, addFeedLog, addEvent } = useStore();
   const [selectedCycleId, setSelectedCycleId] = useState("");
   const [paramForm, setParamForm] = useState({ param: "pH", value: "" });
-  const [feedForm, setFeedForm] = useState({ water_volume: "" });
+  const [feedForm, setFeedForm] = useState({ water_volume: "", ec_measured: "" });
 
   const activeCycles = growCycles.filter((c) => c.status === "active");
   const selectedCycle = growCycles.find((c) => c.id === selectedCycleId);
@@ -59,6 +59,7 @@ export default function LogsPage() {
       nutrients: nutrientsArr,
       additives: additivesArr,
       treatments: treatmentsArr,
+      ec_measured: feedForm.ec_measured ? parseFloat(feedForm.ec_measured) : null,
     };
     addFeedLog(log);
     const all = [...nutrientsArr, ...additivesArr, ...treatmentsArr];
@@ -70,7 +71,7 @@ export default function LogsPage() {
       description: all.map((n) => `${n.name}: ${n.amount.toFixed(2)}${n.unit}`).join(", "),
       date: new Date().toISOString(),
     });
-    setFeedForm({ water_volume: "" });
+    setFeedForm({ water_volume: "", ec_measured: "" });
   };
 
   return (
