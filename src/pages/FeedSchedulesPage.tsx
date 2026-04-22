@@ -236,25 +236,64 @@ export default function FeedSchedulesPage() {
               </div>
 
               {editingId === schedule.id && (
-                <Select onValueChange={(v) => addRow(schedule.id, v)}>
-                  <SelectTrigger className="w-48 bg-muted border-border"><SelectValue placeholder="Add nutrient..." /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORY_ORDER.flatMap((cat) =>
-                      nutrients
-                        .filter((n) => n.category === cat && !schedule.rows.find((r) => r.nutrient_id === n.id))
-                        .map((n) => (
-                          <SelectItem key={n.id} value={n.id}>
-                            {n.name} · {CATEGORY_LABELS[cat].slice(0, -1)} ({formUnit(n.form)})
-                          </SelectItem>
-                        ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_ORDER.map((cat) => (
+                    <Button key={cat} variant="outline" size="sm" onClick={() => openAddRow(schedule.id, cat)}>
+                      <Plus className="w-4 h-4 mr-1" /> Add {CATEGORY_LABELS[cat].slice(0, -1)}
+                    </Button>
+                  ))}
+                </div>
               )}
             </div>
           ))}
         </div>
       )}
+
+      <Dialog open={!!addRowFor} onOpenChange={(o) => !o && setAddRowFor(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>
+              Add {addRowFor ? CATEGORY_LABELS[addRowFor.category].slice(0, -1) : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {addRowFor && (
+            <div className="space-y-3 mt-2">
+              {!createMode ? (
+                <>
+                  <Select value={pickedId} onValueChange={setPickedId}>
+                    <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select from library..." /></SelectTrigger>
+                    <SelectContent>
+                      {nutrients
+                        .filter((n) => n.category === addRowFor.category && !feedSchedules.find((s) => s.id === addRowFor.scheduleId)?.rows.find((r) => r.nutrient_id === n.id))
+                        .map((n) => (
+                          <SelectItem key={n.id} value={n.id}>{n.name} ({formUnit(n.form)})</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => setCreateMode(true)}>
+                    <Plus className="w-4 h-4 mr-1" /> Create new {CATEGORY_LABELS[addRowFor.category].slice(0, -1).toLowerCase()}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Input placeholder="Name" value={createName} onChange={(e) => setCreateName(e.target.value)} className="bg-muted border-border" />
+                  <Select value={createForm} onValueChange={(v) => setCreateForm(v as NutrientType)}>
+                    <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dry">Dry (g/L)</SelectItem>
+                      <SelectItem value="liquid">Liquid (ml/L)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => setCreateMode(false)}>
+                    Pick from library instead
+                  </Button>
+                </>
+              )}
+              <Button onClick={confirmAddRow} className="w-full gradient-primary text-primary-foreground">Add</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
