@@ -65,6 +65,7 @@ export interface FeedSchedule {
   id: string;
   name: string;
   rows: FeedScheduleRow[];
+  ec_targets?: Partial<Record<GrowStage, { min: number; max: number }>>;
 }
 
 export interface FeedScheduleRow {
@@ -122,6 +123,7 @@ export interface FeedLog {
   nutrients: { nutrient_id: string; name: string; amount: number; unit: string }[];
   additives?: { nutrient_id: string; name: string; amount: number; unit: string }[];
   treatments?: { nutrient_id: string; name: string; amount: number; unit: string }[];
+  ec_measured?: number | null;
 }
 
 export const CATEGORY_ORDER: NutrientCategory[] = ['nutrient', 'additive', 'treatment'];

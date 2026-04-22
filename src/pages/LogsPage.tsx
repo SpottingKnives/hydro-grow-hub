@@ -15,7 +15,7 @@ export default function LogsPage() {
   const { growCycles, parameterLogs, feedLogs, nutrients, feedSchedules, addParameterLog, addFeedLog, addEvent } = useStore();
   const [selectedCycleId, setSelectedCycleId] = useState("");
   const [paramForm, setParamForm] = useState({ param: "pH", value: "" });
-  const [feedForm, setFeedForm] = useState({ water_volume: "" });
+  const [feedForm, setFeedForm] = useState({ water_volume: "", ec_measured: "" });
 
   const activeCycles = growCycles.filter((c) => c.status === "active");
   const selectedCycle = growCycles.find((c) => c.id === selectedCycleId);
@@ -59,6 +59,7 @@ export default function LogsPage() {
       nutrients: nutrientsArr,
       additives: additivesArr,
       treatments: treatmentsArr,
+      ec_measured: feedForm.ec_measured ? parseFloat(feedForm.ec_measured) : null,
     };
     addFeedLog(log);
     const all = [...nutrientsArr, ...additivesArr, ...treatmentsArr];
@@ -70,7 +71,7 @@ export default function LogsPage() {
       description: all.map((n) => `${n.name}: ${n.amount.toFixed(2)}${n.unit}`).join(", "),
       date: new Date().toISOString(),
     });
-    setFeedForm({ water_volume: "" });
+    setFeedForm({ water_volume: "", ec_measured: "" });
   };
 
   return (
@@ -145,11 +146,23 @@ export default function LogsPage() {
                 if (!schedule) return null;
                 const stage = selectedCycle.current_stage;
                 const waterVol = parseFloat(feedForm.water_volume) || 0;
+                const ecTarget = schedule.ec_targets?.[stage];
                 return (
                   <div className="space-y-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Water Volume (L)</label>
-                      <Input type="number" min={0} step={0.5} value={feedForm.water_volume} onChange={(e) => setFeedForm({ water_volume: e.target.value })} placeholder="0" className="w-32 bg-muted border-border" />
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Water Volume (L)</label>
+                        <Input type="number" min={0} step={0.5} value={feedForm.water_volume} onChange={(e) => setFeedForm({ ...feedForm, water_volume: e.target.value })} placeholder="0" className="w-32 bg-muted border-border" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">EC Measured</label>
+                        <Input type="number" min={0} step={0.01} value={feedForm.ec_measured} onChange={(e) => setFeedForm({ ...feedForm, ec_measured: e.target.value })} placeholder="–" className="w-28 bg-muted border-border" />
+                      </div>
+                      {ecTarget && (
+                        <div className="text-xs text-muted-foreground pb-2">
+                          Target EC: <span className="text-primary font-semibold">{ecTarget.min}–{ecTarget.max}</span>
+                        </div>
+                      )}
                     </div>
                     {waterVol > 0 && (() => {
                       const activeRows = schedule.rows.filter((r) => (r.amounts[stage] || 0) > 0);
@@ -208,7 +221,12 @@ export default function LogsPage() {
                     return (
                       <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
                         <div className="flex justify-between">
-                          <span className="font-medium text-foreground">{log.water_volume}L</span>
+                          <span className="font-medium text-foreground">
+                            {log.water_volume}L
+                            {log.ec_measured != null && (
+                              <span className="ml-2 text-xs text-muted-foreground">EC <span className="text-primary font-semibold">{log.ec_measured}</span></span>
+                            )}
+                          </span>
                           <span className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM d, HH:mm")}</span>
                         </div>
                         <div className="mt-1 space-y-0.5">
