@@ -66,6 +66,7 @@ export interface FeedSchedule {
   name: string;
   rows: FeedScheduleRow[];
   ec_targets?: Partial<Record<GrowStage, { min: number; max: number }>>;
+  created_at?: string;
 }
 
 export interface FeedScheduleRow {
