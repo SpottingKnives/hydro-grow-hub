@@ -234,6 +234,27 @@ export const useStore = create<AppState>()(
         })),
 
       addNutrient: (nutrient) => set((s) => ({ nutrients: [...s.nutrients, nutrient] })),
+      updateNutrient: (id, updates) =>
+        set((s) => {
+          const nutrients = s.nutrients.map((n) => (n.id === id ? { ...n, ...updates } : n));
+          const updated = nutrients.find((n) => n.id === id);
+          const feedSchedules = updated
+            ? s.feedSchedules.map((f) => ({
+                ...f,
+                rows: f.rows.map((r) =>
+                  r.nutrient_id === id
+                    ? {
+                        ...r,
+                        nutrient_name: updated.name,
+                        nutrient_type: updated.form,
+                        category: updated.category,
+                      }
+                    : r
+                ),
+              }))
+            : s.feedSchedules;
+          return { nutrients, feedSchedules };
+        }),
       deleteNutrient: (id) => set((s) => ({ nutrients: s.nutrients.filter((n) => n.id !== id) })),
 
       addTask: (task) => set((s) => ({ tasks: [...s.tasks, task] })),
