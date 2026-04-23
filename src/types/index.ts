@@ -6,6 +6,7 @@ export type NutrientCategory = 'nutrient' | 'additive' | 'treatment';
 export type FeedMode = 'fixed' | 'guided';
 export type TaskTriggerType = 'on_enter' | 'after_days' | 'on_stage';
 export type TaskStatus = 'open' | 'completed';
+export type Priority = 'low' | 'medium' | 'high';
 
 export interface Nutrient {
   id: string;
