@@ -1,4 +1,4 @@
-export type GrowStage = 'veg' | 'stretch' | 'stack' | 'swell' | 'ripen';
+export type GrowStage = 'nursery' | 'veg' | 'stretch' | 'stack' | 'swell' | 'ripen' | 'dry' | 'cure';
 export type GrowStatus = 'active' | 'completed' | 'archived';
 export type EventType = 'feed' | 'water' | 'transplant' | 'issue' | 'note' | 'stage_change' | 'environment_change' | 'stage_suggestion';
 export type NutrientType = 'dry' | 'liquid';
@@ -41,6 +41,7 @@ export interface Parameter {
   id: string;
   name: string;
   unit: string;
+  active: boolean;
 }
 
 export interface EnvironmentTaskTemplate {
@@ -186,21 +187,27 @@ export const CATEGORY_LABELS: Record<NutrientCategory, string> = {
 export const formUnit = (form: NutrientType) => (form === 'liquid' ? 'ml/L' : 'g/L');
 export const formUnitShort = (form: NutrientType) => (form === 'liquid' ? 'ml' : 'g');
 
-export const STAGES: GrowStage[] = ['veg', 'stretch', 'stack', 'swell', 'ripen'];
-export const FEED_STAGES: GrowStage[] = STAGES;
+export const STAGES: GrowStage[] = ['nursery', 'veg', 'stretch', 'stack', 'swell', 'ripen', 'dry', 'cure'];
+export const FEED_STAGES: GrowStage[] = ['veg', 'stretch', 'stack', 'swell', 'ripen'];
 
 export const STAGE_COLORS: Record<GrowStage, string> = {
+  nursery: 'bg-stage-nursery',
   veg: 'bg-stage-veg',
   stretch: 'bg-stage-stretch',
   stack: 'bg-stage-stack',
   swell: 'bg-stage-swell',
   ripen: 'bg-stage-ripen',
+  dry: 'bg-stage-dry',
+  cure: 'bg-stage-cure',
 };
 
 export const STAGE_TEXT_COLORS: Record<GrowStage, string> = {
+  nursery: 'text-stage-nursery',
   veg: 'text-stage-veg',
   stretch: 'text-stage-stretch',
   stack: 'text-stage-stack',
   swell: 'text-stage-swell',
   ripen: 'text-stage-ripen',
+  dry: 'text-stage-dry',
+  cure: 'text-stage-cure',
 };
