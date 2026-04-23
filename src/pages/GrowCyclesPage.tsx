@@ -2,127 +2,26 @@ import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ChevronRight, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
-import { STAGES, type GrowCycle, type GrowStage } from "@/types";
+import { type FeedMode, type GrowCycle, type GrowStrain, type GrowStage } from "@/types";
 import { Link } from "react-router-dom";
 
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, addGrowCycle, deleteGrowCycle } = useStore();
-  const [showCreate, setShowCreate] = useState(false);
-  const [newCycle, setNewCycle] = useState({
-    start_date: format(new Date(), "yyyy-MM-dd"),
-    environment_id: "",
-    feed_schedule_id: "",
-    current_stage: "nursery" as GrowStage,
-  });
-
-  const handleCreate = () => {
-    const startDate = new Date(newCycle.start_date);
-    const name = `Grow ${format(startDate, "MMM yyyy")} #${growCycles.length + 1}`;
-    const cycle: GrowCycle = {
-      id: crypto.randomUUID(),
-      name,
-      start_date: startDate.toISOString(),
-      status: "active",
-      current_stage: newCycle.current_stage,
-      stage_start_date: startDate.toISOString(),
-      environment_id: newCycle.environment_id || null,
-      feed_schedule_id: newCycle.feed_schedule_id || null,
-      strains: [],
-      created_at: new Date().toISOString(),
-    };
-    addGrowCycle(cycle);
-    setShowCreate(false);
+  const { growCycles, environments, feedSchedules, strains, growStrains, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", start_date: format(new Date(), "yyyy-MM-dd"), veg_weeks: "4", flower_weeks: "8", environment_id: "", feed_schedule_id: "", feed_mode: "fixed" as FeedMode, strain_id: "", plant_count: "1" });
+  const [selected, setSelected] = useState<{ strain_id: string; plant_count: string }[]>([]);
+  const addStrain = () => { if (!form.strain_id) return; setSelected([...selected, { strain_id: form.strain_id, plant_count: form.plant_count || "1" }]); setForm({ ...form, strain_id: "", plant_count: "1" }); };
+  const create = () => {
+    const gid = crypto.randomUUID(); const start = new Date(form.start_date).toISOString();
+    const cycle: GrowCycle = { id: gid, name: form.name.trim() || `Grow ${format(new Date(form.start_date), "MMM yyyy")}`, start_date: start, status: "active", current_stage: "veg", stage_start_date: start, veg_weeks: parseInt(form.veg_weeks) || 4, flower_weeks: parseInt(form.flower_weeks) || 8, feed_mode: form.feed_mode, environment_id: null, feed_schedule_id: form.feed_schedule_id || null, strains: selected.map((s) => s.strain_id), created_at: new Date().toISOString() };
+    const links: GrowStrain[] = selected.map((link) => { const s = strains.find((x) => x.id === link.strain_id)!; return { id: crypto.randomUUID(), grow_cycle_id: gid, strain_id: s.id, plant_count: parseInt(link.plant_count) || 1, strain_name: s.name, veg_weeks: s.veg_weeks, flower_weeks: s.flower_weeks }; });
+    addGrowCycle(cycle, links); if (form.environment_id) setTimeout(() => moveGrowEnvironment(gid, form.environment_id, form.start_date), 0); setOpen(false); setSelected([]);
   };
-
-  return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Grow Cycles</h1>
-        <Dialog open={showCreate} onOpenChange={setShowCreate}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gradient-primary text-primary-foreground">
-              <Plus className="w-4 h-4 mr-1" /> New Grow
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div>
-                <label className="text-sm text-muted-foreground">Start Date</label>
-                <Input type="date" value={newCycle.start_date} onChange={(e) => setNewCycle({ ...newCycle, start_date: e.target.value })} className="bg-muted border-border" />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">Starting Stage</label>
-                <Select value={newCycle.current_stage} onValueChange={(v) => setNewCycle({ ...newCycle, current_stage: v as GrowStage })}>
-                  <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {STAGES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {environments.length > 0 && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Environment</label>
-                  <Select value={newCycle.environment_id} onValueChange={(v) => setNewCycle({ ...newCycle, environment_id: v })}>
-                    <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Optional" /></SelectTrigger>
-                    <SelectContent>
-                      {environments.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {feedSchedules.length > 0 && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Feed Schedule</label>
-                  <Select value={newCycle.feed_schedule_id} onValueChange={(v) => setNewCycle({ ...newCycle, feed_schedule_id: v })}>
-                    <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Optional" /></SelectTrigger>
-                    <SelectContent>
-                      {feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <Button onClick={handleCreate} className="w-full gradient-primary text-primary-foreground">Create Grow Cycle</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {growCycles.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <p className="text-muted-foreground">No grow cycles yet. Create your first one!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {growCycles.map((cycle) => {
-            const daysSinceStart = Math.floor((Date.now() - new Date(cycle.start_date).getTime()) / 86400000);
-            return (
-              <Link key={cycle.id} to={`/grows/${cycle.id}`} className="glass-card p-4 flex items-center justify-between hover:border-primary/30 transition-colors block">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{cycle.name}</h3>
-                    <p className="text-xs text-muted-foreground">Day {daysSinceStart} · Started {format(new Date(cycle.start_date), "MMM d, yyyy")}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <StageBadge stage={cycle.current_stage} />
-                  <StatusBadge status={cycle.status} />
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); deleteGrowCycle(cycle.id); }}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  return <div className="space-y-6 max-w-5xl"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold text-foreground">Grow Cycles</h1><Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-1" /> New Grow</Button></div>{growCycles.length === 0 ? <div className="glass-card p-12 text-center"><p className="text-muted-foreground">No grow cycles yet.</p></div> : <div className="space-y-3">{growCycles.map((cycle) => { const days = Math.max(0, Math.floor((Date.now() - new Date(cycle.start_date).getTime()) / 86400000)); const linked = growStrains.filter((s) => s.grow_cycle_id === cycle.id); const flowerTimes = new Set(linked.map((s) => s.flower_weeks)); return <Link key={cycle.id} to={`/grows/${cycle.id}`} className="glass-card p-4 flex items-center justify-between gap-3 hover:border-primary/30 transition-colors block"><div className="min-w-0"><h3 className="font-semibold text-foreground truncate">{cycle.name}</h3><p className="text-xs text-muted-foreground">Day {days} · {cycle.veg_weeks}w veg · {cycle.flower_weeks}w flower · {cycle.feed_mode}</p>{linked.length > 0 && <p className="text-xs text-muted-foreground truncate">{linked.map((s) => `${s.strain_name} x${s.plant_count}`).join(" · ")}</p>}{flowerTimes.size > 1 && <p className="text-xs text-warning flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Mixed flowering times</p>}</div><div className="flex items-center gap-2 shrink-0"><StageBadge stage={cycle.current_stage} /><StatusBadge status={cycle.status} /><Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); deleteGrowCycle(cycle.id); }}><Trash2 className="w-4 h-4" /></Button><ChevronRight className="w-4 h-4 text-muted-foreground" /></div></Link>; })}</div>}<Dialog open={open} onOpenChange={setOpen}><DialogContent className="bg-card border-border max-w-2xl"><DialogHeader><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader><div className="space-y-4 mt-2"><Input placeholder="Grow name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" /><div className="grid grid-cols-3 gap-3"><Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="bg-muted border-border" /><Input type="number" placeholder="Veg weeks" value={form.veg_weeks} onChange={(e) => setForm({ ...form, veg_weeks: e.target.value })} className="bg-muted border-border" /><Input type="number" placeholder="Flower weeks" value={form.flower_weeks} onChange={(e) => setForm({ ...form, flower_weeks: e.target.value })} className="bg-muted border-border" /></div><div className="grid grid-cols-1 md:grid-cols-3 gap-3"><Select value={form.feed_mode} onValueChange={(v) => setForm({ ...form, feed_mode: v as FeedMode })}><SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fixed">Fixed feed</SelectItem><SelectItem value="guided">Guided feed</SelectItem></SelectContent></Select><Select value={form.environment_id} onValueChange={(v) => setForm({ ...form, environment_id: v })}><SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Environment" /></SelectTrigger><SelectContent>{environments.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select><Select value={form.feed_schedule_id} onValueChange={(v) => setForm({ ...form, feed_schedule_id: v })}><SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Feed schedule" /></SelectTrigger><SelectContent>{feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><label className="text-sm text-muted-foreground">Strains</label><div className="grid grid-cols-[1fr_88px_auto] gap-2"><Select value={form.strain_id} onValueChange={(v) => setForm({ ...form, strain_id: v })}><SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Add strain" /></SelectTrigger><SelectContent>{strains.filter((s) => s.active).map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><Input type="number" min={1} value={form.plant_count} onChange={(e) => setForm({ ...form, plant_count: e.target.value })} className="bg-muted border-border" /><Button variant="outline" onClick={addStrain}>Add</Button></div>{selected.map((s, i) => { const st = strains.find((x) => x.id === s.strain_id); return <div key={`${s.strain_id}-${i}`} className="flex justify-between text-sm bg-muted/50 rounded-lg px-3 py-2"><span>{st?.name} x{s.plant_count}</span><button className="text-muted-foreground" onClick={() => setSelected(selected.filter((_, idx) => idx !== i))}>Remove</button></div>; })}</div><Button onClick={create} className="w-full gradient-primary text-primary-foreground">Create Grow</Button></div></DialogContent></Dialog></div>;
 }
