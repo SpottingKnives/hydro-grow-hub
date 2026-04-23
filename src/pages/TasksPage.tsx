@@ -26,12 +26,15 @@ export default function TasksPage() {
     const task: GrowTask = {
       id: crypto.randomUUID(),
       grow_cycle_id: newTask.grow_cycle_id || null,
+      name: newTask.title,
       title: newTask.title,
       description: newTask.description,
       due_date: newTask.due_date || null,
       stage_trigger: (newTask.stage_trigger as GrowStage) || null,
+      status: "open",
       priority: newTask.priority,
       completed: false,
+      generated_from_environment: false,
       reminder_time: null,
     };
     addTask(task);

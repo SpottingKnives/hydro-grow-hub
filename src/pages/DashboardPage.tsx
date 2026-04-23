@@ -19,6 +19,8 @@ const eventIcons: Record<EventType, React.ReactNode> = {
   issue: <AlertTriangle className="w-3 h-3" />,
   note: <StickyNote className="w-3 h-3" />,
   stage_change: <Sprout className="w-3 h-3" />,
+  environment_change: <ArrowRightLeft className="w-3 h-3" />,
+  stage_suggestion: <Sprout className="w-3 h-3" />,
 };
 
 const eventColors: Record<EventType, string> = {
@@ -28,6 +30,8 @@ const eventColors: Record<EventType, string> = {
   issue: "bg-destructive/20 text-destructive",
   note: "bg-muted text-muted-foreground",
   stage_change: "bg-accent text-accent-foreground",
+  environment_change: "bg-info/20 text-info",
+  stage_suggestion: "bg-primary/20 text-primary",
 };
 
 export default function DashboardPage() {

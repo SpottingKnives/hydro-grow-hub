@@ -1,4 +1,4 @@
-import { Home, Beaker, Leaf, Sprout, FlaskConical, Dna } from "lucide-react";
+import { Home, Beaker, Leaf, Sprout, FlaskConical, Dna, SlidersHorizontal } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 
@@ -6,6 +6,7 @@ const mainItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Feed Schedules", url: "/feeds", icon: Beaker },
   { title: "Nutrients & Additives", url: "/nutrients", icon: FlaskConical },
+  { title: "Parameters", url: "/parameters", icon: SlidersHorizontal },
   { title: "Environments", url: "/environments", icon: Leaf },
   { title: "Grow Cycles", url: "/grows", icon: Sprout },
   { title: "Strains", url: "/strains", icon: Dna },

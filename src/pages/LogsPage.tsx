@@ -9,12 +9,10 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnitShort, type NutrientCategory } from "@/types";
 
-const PARAMS = ["temp", "humidity", "pH", "EC", "CO2", "VPD"];
-
 export default function LogsPage() {
-  const { growCycles, parameterLogs, feedLogs, nutrients, feedSchedules, addParameterLog, addFeedLog, addEvent } = useStore();
+  const { growCycles, parameterLogs, feedLogs, nutrients, feedSchedules, parameters, addParameterLog, addFeedLog, addEvent } = useStore();
   const [selectedCycleId, setSelectedCycleId] = useState("");
-  const [paramForm, setParamForm] = useState({ param: "pH", value: "" });
+  const [paramForm, setParamForm] = useState({ parameter_id: "", value: "" });
   const [feedForm, setFeedForm] = useState({ water_volume: "", ec_measured: "" });
 
   const activeCycles = growCycles.filter((c) => c.status === "active");
@@ -27,9 +25,8 @@ export default function LogsPage() {
     addParameterLog({
       id: crypto.randomUUID(),
       grow_cycle_id: selectedCycleId,
-      environment_id: selectedCycle?.environment_id || null,
       timestamp: new Date().toISOString(),
-      param: paramForm.param,
+      parameter_id: paramForm.parameter_id,
       value: parseFloat(paramForm.value),
     });
     setParamForm({ ...paramForm, value: "" });
@@ -55,7 +52,10 @@ export default function LogsPage() {
       id: crypto.randomUUID(),
       grow_cycle_id: selectedCycleId,
       date: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      stage,
       water_volume: waterVol,
+      liters: waterVol,
       nutrients: nutrientsArr,
       additives: additivesArr,
       treatments: treatmentsArr,
@@ -98,10 +98,10 @@ export default function LogsPage() {
               <div className="flex gap-3 items-end">
                 <div>
                   <label className="text-xs text-muted-foreground">Parameter</label>
-                  <Select value={paramForm.param} onValueChange={(v) => setParamForm({ ...paramForm, param: v })}>
+                  <Select value={paramForm.parameter_id} onValueChange={(v) => setParamForm({ ...paramForm, parameter_id: v })}>
                     <SelectTrigger className="w-32 bg-muted border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {PARAMS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                      {parameters.filter((p) => p.active).map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -123,7 +123,7 @@ export default function LogsPage() {
                 <div className="space-y-1">
                   {cycleLogs.slice(0, 50).map((log) => (
                     <div key={log.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                      <span className="w-16 text-muted-foreground font-medium">{log.param}</span>
+                      <span className="w-16 text-muted-foreground font-medium">{parameters.find((p) => p.id === log.parameter_id)?.name ?? "Parameter"}</span>
                       <span className="text-foreground font-semibold">{log.value}</span>
                       <span className="text-xs text-muted-foreground ml-auto">{format(new Date(log.timestamp), "MMM d, HH:mm")}</span>
                     </div>

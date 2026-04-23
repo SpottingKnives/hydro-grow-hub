@@ -562,6 +562,7 @@ export type Database = {
       }
       parameters: {
         Row: {
+          active: boolean
           created_at: string
           id: string
           name: string
@@ -569,6 +570,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           id?: string
           name: string
@@ -576,6 +578,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           id?: string
           name?: string
@@ -632,7 +635,15 @@ export type Database = {
     }
     Enums: {
       feed_mode: "fixed" | "guided"
-      grow_stage: "veg" | "stretch" | "stack" | "swell" | "ripen"
+      grow_stage:
+        | "veg"
+        | "stretch"
+        | "stack"
+        | "swell"
+        | "ripen"
+        | "nursery"
+        | "dry"
+        | "cure"
       nutrient_category: "nutrient" | "additive" | "treatment"
       nutrient_form: "dry" | "liquid"
       task_status: "open" | "completed"
@@ -765,7 +776,16 @@ export const Constants = {
   public: {
     Enums: {
       feed_mode: ["fixed", "guided"],
-      grow_stage: ["veg", "stretch", "stack", "swell", "ripen"],
+      grow_stage: [
+        "veg",
+        "stretch",
+        "stack",
+        "swell",
+        "ripen",
+        "nursery",
+        "dry",
+        "cure",
+      ],
       nutrient_category: ["nutrient", "additive", "treatment"],
       nutrient_form: ["dry", "liquid"],
       task_status: ["open", "completed"],
