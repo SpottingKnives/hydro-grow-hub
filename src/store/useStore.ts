@@ -1,318 +1,86 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
-  GrowCycle, StageHistory, Environment, FeedSchedule, GrowTask,
-  GrowEvent, ParameterLog, AlertRule, FeedLog, Nutrient, Strain, Breeder, FeedScheduleRow
+  AlertRule, Environment, EnvironmentTaskTemplate, FeedLog, FeedMode, FeedSchedule, FeedScheduleRow,
+  GrowCycle, GrowEnvironmentTimeline, GrowEvent, GrowStage, GrowStrain, GrowTask, Nutrient,
+  NutrientCategory, Parameter, ParameterLog, StageHistory, Strain, TaskTriggerType
 } from '@/types';
 import { FEED_STAGES } from '@/types';
 
-const DTR_STAGES = ['veg', 'stretch', 'stack', 'swell', 'ripen'] as const;
-const buildAmounts = (vals: number[]) =>
-  Object.fromEntries(DTR_STAGES.map((s, i) => [s, vals[i]])) as Record<string, number>;
+const now = () => new Date().toISOString();
+const id = () => crypto.randomUUID();
+const amounts = () => Object.fromEntries(FEED_STAGES.map((s) => [s, 0])) as Record<GrowStage, number>;
+const unit = (form: 'dry' | 'liquid') => (form === 'liquid' ? 'ml/L' : 'g/L');
+const shortUnit = (form: 'dry' | 'liquid') => (form === 'liquid' ? 'ml' : 'g');
+const addDays = (date: string, days: number) => new Date(new Date(date).getTime() + days * 86400000).toISOString().slice(0, 10);
 
-const buildDTRSchedule = (
-  id: string,
-  name: string,
-  data: Array<{ nutrient_id: string; nutrient_name: string; nutrient_type: 'dry' | 'liquid'; category: 'nutrient' | 'additive' | 'treatment'; vals: number[] }>,
-  ec_targets?: FeedSchedule['ec_targets']
-): FeedSchedule => ({
-  id,
-  name,
-  rows: data.map((d) => ({
-    nutrient_id: d.nutrient_id,
-    nutrient_name: d.nutrient_name,
-    nutrient_type: d.nutrient_type,
-    category: d.category,
-    amounts: buildAmounts(d.vals),
-  })),
-  ec_targets,
+const DEFAULT_NUTRIENTS: Nutrient[] = [
+  { id: 'part-a', name: 'Part A', category: 'nutrient', form: 'dry', active: true, unit: 'g/L' },
+  { id: 'part-b', name: 'Part B', category: 'nutrient', form: 'dry', active: true, unit: 'g/L' },
+  { id: 'bloom', name: 'Bloom', category: 'nutrient', form: 'dry', active: true, unit: 'g/L' },
+  { id: 'front-row-si', name: 'Front Row Si', category: 'additive', form: 'liquid', active: true, unit: 'ml/L' },
+  { id: 'phoszyme', name: 'PhosZyme', category: 'additive', form: 'liquid', active: true, unit: 'ml/L' },
+  { id: 'cal-hypo', name: 'Calcium Hypochlorite', category: 'treatment', form: 'dry', active: true, unit: 'g/L' },
+];
+
+const row = (nutrient: Nutrient, vals: number[], order_index: number): FeedScheduleRow => ({
+  id: id(), nutrient_id: nutrient.id, nutrient_name: nutrient.name, nutrient_type: nutrient.form,
+  category: nutrient.category, order_index, amounts: Object.fromEntries(FEED_STAGES.map((s, i) => [s, vals[i] ?? 0])) as Record<GrowStage, number>,
 });
 
-const DTR_ROWS_STD = [
-  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.4, 1.5, 1.1, 0.9, 0.9] },
-  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.7, 1.9, 1.3, 1.1, 1.0] },
-  { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0.9, 1.1, 0.7, 0.6, 0.5] },
-  { nutrient_id: 'front-row-si', nutrient_name: 'Front Row Si', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
-  { nutrient_id: 'phoszyme', nutrient_name: 'PhosZyme', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
-  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.0035, 0.0035, 0.0035, 0.0035, 0.0035] },
-];
-const DTR_ROWS_HIGH = [
-  { nutrient_id: 'part-a', nutrient_name: 'Part A', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.4, 1.4, 1.1, 0.9, 0.5] },
-  { nutrient_id: 'part-b', nutrient_name: 'Part B', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [1.7, 1.7, 1.4, 1.1, 0.6] },
-  { nutrient_id: 'bloom', nutrient_name: 'Bloom', nutrient_type: 'dry' as const, category: 'nutrient' as const, vals: [0.9, 0.9, 0.8, 0.6, 0.6] },
-  { nutrient_id: 'front-row-si', nutrient_name: 'Front Row Si', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
-  { nutrient_id: 'phoszyme', nutrient_name: 'PhosZyme', nutrient_type: 'liquid' as const, category: 'additive' as const, vals: [0.1, 0.1, 0.1, 0.1, 0.1] },
-  { nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry' as const, category: 'treatment' as const, vals: [0.0035, 0.0035, 0.0035, 0.0035, 0.0035] },
-];
-
-const DTR_EC_STD: FeedSchedule['ec_targets'] = {
-  veg: { min: 1.6, max: 1.8 },
-  stretch: { min: 2.0, max: 2.2 },
-  stack: { min: 1.6, max: 1.8 },
-  swell: { min: 1.4, max: 1.6 },
-  ripen: { min: 1.2, max: 1.4 },
-};
-const DTR_EC_HIGH: FeedSchedule['ec_targets'] = {
-  veg: { min: 1.6, max: 1.8 },
-  stretch: { min: 2.2, max: 2.4 },
-  stack: { min: 1.8, max: 2.0 },
-  swell: { min: 1.6, max: 1.8 },
-  ripen: { min: 1.2, max: 1.4 },
-};
-
-const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [
-  buildDTRSchedule('dtr-standard', 'DTR Standard', DTR_ROWS_STD, DTR_EC_STD),
-  buildDTRSchedule('dtr-high-strength', 'DTR High Strength', DTR_ROWS_HIGH, DTR_EC_HIGH),
-];
+const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [{
+  id: 'dtr-standard', name: 'DTR Standard', notes: 'Default reference schedule', created_at: '2024-01-01T00:00:00.000Z',
+  ec_targets: { veg: { min: 1.6, max: 1.8 }, stretch: { min: 2.0, max: 2.2 }, stack: { min: 1.6, max: 1.8 }, swell: { min: 1.4, max: 1.6 }, ripen: { min: 1.2, max: 1.4 } },
+  rows: DEFAULT_NUTRIENTS.map((n, i) => row(n, i === 0 ? [1.4, 1.5, 1.1, 0.9, 0.9] : i === 1 ? [1.7, 1.9, 1.3, 1.1, 1.0] : i === 2 ? [0.9, 1.1, 0.7, 0.6, 0.5] : i === 5 ? [0.0035, 0.0035, 0.0035, 0.0035, 0.0035] : [0.1, 0.1, 0.1, 0.1, 0.1], i)),
+}];
 
 interface AppState {
-  growCycles: GrowCycle[];
-  stageHistory: StageHistory[];
-  environments: Environment[];
-  feedSchedules: FeedSchedule[];
-  nutrients: Nutrient[];
-  tasks: GrowTask[];
-  events: GrowEvent[];
-  parameterLogs: ParameterLog[];
-  alertRules: AlertRule[];
-  feedLogs: FeedLog[];
-  strains: Strain[];
-  breeders: Breeder[];
-
-  // Grow Cycles
-  addGrowCycle: (cycle: GrowCycle) => void;
-  updateGrowCycle: (id: string, updates: Partial<GrowCycle>) => void;
-  deleteGrowCycle: (id: string) => void;
-  changeStage: (cycleId: string, newStage: GrowCycle['current_stage']) => void;
-
-  // Environments
-  addEnvironment: (env: Environment) => void;
-  updateEnvironment: (id: string, updates: Partial<Environment>) => void;
-  deleteEnvironment: (id: string) => void;
-
-  // Feed Schedules
-  addFeedSchedule: (schedule: FeedSchedule) => void;
-  updateFeedSchedule: (id: string, updates: Partial<FeedSchedule>) => void;
-  deleteFeedSchedule: (id: string) => void;
-  reorderFeedScheduleRow: (scheduleId: string, nutrientId: string, direction: 'up' | 'down') => void;
-
-  // Nutrients
-  addNutrient: (nutrient: Nutrient) => void;
-  updateNutrient: (id: string, updates: Partial<Nutrient>) => void;
-  deleteNutrient: (id: string) => void;
-
-  // Tasks
-  addTask: (task: GrowTask) => void;
-  updateTask: (id: string, updates: Partial<GrowTask>) => void;
-  deleteTask: (id: string) => void;
-  toggleTask: (id: string) => void;
-
-  // Events
-  addEvent: (event: GrowEvent) => void;
-  deleteEvent: (id: string) => void;
-
-  // Parameter Logs
-  addParameterLog: (log: ParameterLog) => void;
-
-  // Feed Logs
-  addFeedLog: (log: FeedLog) => void;
-
-  // Strains & Breeders
-  addStrain: (strain: Strain) => void;
-  deleteStrain: (id: string) => void;
-  addBreeder: (breeder: Breeder) => void;
+  growCycles: GrowCycle[]; stageHistory: StageHistory[]; environments: Environment[]; feedSchedules: FeedSchedule[];
+  nutrients: Nutrient[]; tasks: GrowTask[]; events: GrowEvent[]; parameterLogs: ParameterLog[]; alertRules: AlertRule[];
+  feedLogs: FeedLog[]; strains: Strain[]; growStrains: GrowStrain[]; environmentTimeline: GrowEnvironmentTimeline[]; parameters: Parameter[];
+  addGrowCycle: (cycle: GrowCycle, strainLinks?: GrowStrain[]) => void; updateGrowCycle: (id: string, updates: Partial<GrowCycle>) => void; deleteGrowCycle: (id: string) => void; changeStage: (cycleId: string, newStage: GrowStage) => void; moveGrowEnvironment: (cycleId: string, environmentId: string, startDate?: string) => void;
+  addEnvironment: (env: Environment) => void; updateEnvironment: (id: string, updates: Partial<Environment>) => void; deleteEnvironment: (id: string) => void;
+  addParameter: (parameter: Parameter) => void;
+  addFeedSchedule: (schedule: FeedSchedule) => void; updateFeedSchedule: (id: string, updates: Partial<FeedSchedule>) => void; deleteFeedSchedule: (id: string) => void; reorderFeedScheduleRow: (scheduleId: string, rowId: string, direction: 'up' | 'down') => void; addScheduleRow: (scheduleId: string, nutrient: Nutrient) => void;
+  addNutrient: (nutrient: Nutrient) => void; updateNutrient: (id: string, updates: Partial<Nutrient>) => void; deleteNutrient: (id: string) => void;
+  addTask: (task: GrowTask) => void; updateTask: (id: string, updates: Partial<GrowTask>) => void; deleteTask: (id: string) => void; toggleTask: (id: string) => void;
+  addEvent: (event: GrowEvent) => void; deleteEvent: (id: string) => void; addParameterLog: (log: ParameterLog) => void; addFeedLog: (log: FeedLog) => void;
+  addStrain: (strain: Strain) => void; updateStrain: (id: string, updates: Partial<Strain>) => void; deleteStrain: (id: string) => void;
 }
 
-export const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      growCycles: [],
-      stageHistory: [],
-      environments: [],
-      feedSchedules: DEFAULT_FEED_SCHEDULES,
-      nutrients: [
-        { id: 'part-a', name: 'Part A', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
-        { id: 'part-b', name: 'Part B', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
-        { id: 'bloom', name: 'Bloom', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
-        { id: 'front-row-si', name: 'Front Row Si', brand: 'Front Row', type: 'liquid', form: 'liquid', category: 'additive', unit: 'ml/L' },
-        { id: 'phoszyme', name: 'PhosZyme', brand: 'General', type: 'liquid', form: 'liquid', category: 'additive', unit: 'ml/L' },
-        { id: 'cal-hypo', name: 'Calcium Hypochlorite', brand: 'General', type: 'dry', form: 'dry', category: 'treatment', unit: 'g/L' },
-      ],
-      tasks: [],
-      events: [],
-      parameterLogs: [],
-      alertRules: [],
-      feedLogs: [],
-      strains: [],
-      breeders: [],
+export const useStore = create<AppState>()(persist((set, get) => ({
+  growCycles: [], stageHistory: [], environments: [], feedSchedules: DEFAULT_FEED_SCHEDULES, nutrients: DEFAULT_NUTRIENTS,
+  tasks: [], events: [], parameterLogs: [], alertRules: [], feedLogs: [], strains: [], growStrains: [], environmentTimeline: [],
+  parameters: [{ id: 'ph', name: 'pH', unit: 'pH' }, { id: 'ec', name: 'EC', unit: 'mS/cm' }, { id: 'temp', name: 'Temperature', unit: '°C' }, { id: 'humidity', name: 'Humidity', unit: '%' }],
 
-      addGrowCycle: (cycle) => {
-        const history: StageHistory = {
-          id: crypto.randomUUID(),
-          grow_cycle_id: cycle.id,
-          stage: cycle.current_stage,
-          started_at: cycle.start_date,
-          ended_at: null,
-        };
-        set((s) => ({
-          growCycles: [...s.growCycles, cycle],
-          stageHistory: [...s.stageHistory, history],
-        }));
-      },
-      updateGrowCycle: (id, updates) =>
-        set((s) => ({
-          growCycles: s.growCycles.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-        })),
-      deleteGrowCycle: (id) =>
-        set((s) => ({
-          growCycles: s.growCycles.filter((c) => c.id !== id),
-          stageHistory: s.stageHistory.filter((h) => h.grow_cycle_id !== id),
-          events: s.events.filter((e) => e.grow_cycle_id !== id),
-          tasks: s.tasks.filter((t) => t.grow_cycle_id !== id),
-        })),
-      changeStage: (cycleId, newStage) => {
-        const now = new Date().toISOString();
-        set((s) => {
-          const updatedHistory = s.stageHistory.map((h) =>
-            h.grow_cycle_id === cycleId && !h.ended_at ? { ...h, ended_at: now } : h
-          );
-          const newHistory: StageHistory = {
-            id: crypto.randomUUID(),
-            grow_cycle_id: cycleId,
-            stage: newStage,
-            started_at: now,
-            ended_at: null,
-          };
-          const cycle = s.growCycles.find((c) => c.id === cycleId);
-          const stageEvent: GrowEvent = {
-            id: crypto.randomUUID(),
-            grow_cycle_id: cycleId,
-            type: 'stage_change',
-            title: `Stage → ${newStage}`,
-            description: `Changed from ${cycle?.current_stage} to ${newStage}`,
-            date: now,
-          };
-          return {
-            growCycles: s.growCycles.map((c) =>
-              c.id === cycleId ? { ...c, current_stage: newStage, stage_start_date: now } : c
-            ),
-            stageHistory: [...updatedHistory, newHistory],
-            events: [...s.events, stageEvent],
-          };
-        });
-      },
+  addGrowCycle: (cycle, strainLinks = []) => set((s) => ({ growCycles: [...s.growCycles, cycle], growStrains: [...s.growStrains, ...strainLinks], stageHistory: [...s.stageHistory, { id: id(), grow_cycle_id: cycle.id, stage: cycle.current_stage, started_at: cycle.start_date, ended_at: null }] })),
+  updateGrowCycle: (gid, updates) => set((s) => ({ growCycles: s.growCycles.map((c) => c.id === gid ? { ...c, ...updates } : c) })),
+  deleteGrowCycle: (gid) => set((s) => ({ growCycles: s.growCycles.filter((c) => c.id !== gid), growStrains: s.growStrains.filter((g) => g.grow_cycle_id !== gid), stageHistory: s.stageHistory.filter((h) => h.grow_cycle_id !== gid), events: s.events.filter((e) => e.grow_cycle_id !== gid), tasks: s.tasks.filter((t) => t.grow_cycle_id !== gid), environmentTimeline: s.environmentTimeline.filter((t) => t.grow_cycle_id !== gid) })),
+  changeStage: (cycleId, newStage) => set((s) => { const current = s.growCycles.find((c) => c.id === cycleId); return { growCycles: s.growCycles.map((c) => c.id === cycleId ? { ...c, current_stage: newStage, stage_start_date: now() } : c), stageHistory: [...s.stageHistory.map((h) => h.grow_cycle_id === cycleId && !h.ended_at ? { ...h, ended_at: now() } : h), { id: id(), grow_cycle_id: cycleId, stage: newStage, started_at: now(), ended_at: null }], events: [...s.events, { id: id(), grow_cycle_id: cycleId, type: 'stage_change', title: `Transitioned to ${newStage}`, description: `Changed from ${current?.current_stage} to ${newStage}`, date: now() }] }; }),
+  moveGrowEnvironment: (cycleId, environmentId, startDate = now().slice(0, 10)) => set((s) => { const env = s.environments.find((e) => e.id === environmentId); if (!env) return s; const templates = env.task_templates || []; const generated = templates.map((t): GrowTask => ({ id: id(), grow_cycle_id: cycleId, name: t.name, title: t.name, description: '', due_date: t.trigger_type === 'after_days' ? addDays(startDate, t.trigger_offset_days) : startDate, stage_trigger: t.trigger_stage, status: 'open', completed: false, generated_from_environment: true })); return { growCycles: s.growCycles.map((c) => c.id === cycleId ? { ...c, environment_id: environmentId } : c), environmentTimeline: [...s.environmentTimeline.map((t) => t.grow_cycle_id === cycleId && !t.end_date ? { ...t, end_date: startDate } : t), { id: id(), grow_cycle_id: cycleId, environment_id: env.id, environment_name: env.name, start_date: startDate, end_date: null, snapshot: { name: env.name, supported_stages: env.supported_stages, site_count: env.site_count, system_description: env.system_description, parameter_ids: env.parameter_ids } }], tasks: [...s.tasks, ...generated], events: [...s.events, { id: id(), grow_cycle_id: cycleId, type: 'environment_change', title: `Moved to ${env.name}`, description: '', date: startDate }] }; }),
 
-      addEnvironment: (env) => set((s) => ({ environments: [...s.environments, env] })),
-      updateEnvironment: (id, updates) =>
-        set((s) => ({
-          environments: s.environments.map((e) => (e.id === id ? { ...e, ...updates } : e)),
-        })),
-      deleteEnvironment: (id) =>
-        set((s) => ({ environments: s.environments.filter((e) => e.id !== id) })),
+  addEnvironment: (env) => set((s) => ({ environments: [...s.environments, env] })),
+  updateEnvironment: (eid, updates) => set((s) => ({ environments: s.environments.map((e) => e.id === eid ? { ...e, ...updates } : e) })),
+  deleteEnvironment: (eid) => set((s) => ({ environments: s.environments.filter((e) => e.id !== eid) })),
+  addParameter: (parameter) => set((s) => ({ parameters: [...s.parameters, parameter] })),
 
-      addFeedSchedule: (schedule) => set((s) => ({ feedSchedules: [...s.feedSchedules, schedule] })),
-      updateFeedSchedule: (id, updates) =>
-        set((s) => ({
-          feedSchedules: s.feedSchedules.map((f) => (f.id === id ? { ...f, ...updates } : f)),
-        })),
-      deleteFeedSchedule: (id) =>
-        set((s) => ({ feedSchedules: s.feedSchedules.filter((f) => f.id !== id) })),
-      reorderFeedScheduleRow: (scheduleId, nutrientId, direction) =>
-        set((s) => ({
-          feedSchedules: s.feedSchedules.map((f) => {
-            if (f.id !== scheduleId) return f;
-            const idx = f.rows.findIndex((r) => r.nutrient_id === nutrientId);
-            if (idx < 0) return f;
-            const target = direction === 'up' ? idx - 1 : idx + 1;
-            if (target < 0 || target >= f.rows.length) return f;
-            // Only reorder within same category
-            if (f.rows[target].category !== f.rows[idx].category) return f;
-            const rows = [...f.rows];
-            [rows[idx], rows[target]] = [rows[target], rows[idx]];
-            return { ...f, rows };
-          }),
-        })),
+  addFeedSchedule: (schedule) => set((s) => ({ feedSchedules: [{ ...schedule, created_at: schedule.created_at || now() }, ...s.feedSchedules] })),
+  updateFeedSchedule: (fid, updates) => set((s) => ({ feedSchedules: s.feedSchedules.map((f) => f.id === fid ? { ...f, ...updates } : f) })),
+  deleteFeedSchedule: (fid) => set((s) => ({ feedSchedules: s.feedSchedules.filter((f) => f.id !== fid) })),
+  reorderFeedScheduleRow: (scheduleId, rowId, direction) => set((s) => ({ feedSchedules: s.feedSchedules.map((f) => { if (f.id !== scheduleId) return f; const rows = [...f.rows].sort((a, b) => a.order_index - b.order_index); const idx = rows.findIndex((r) => r.id === rowId || r.nutrient_id === rowId); const target = direction === 'up' ? idx - 1 : idx + 1; if (idx < 0 || target < 0 || target >= rows.length || rows[idx].category !== rows[target].category) return f; [rows[idx], rows[target]] = [rows[target], rows[idx]]; return { ...f, rows: rows.map((r, i) => ({ ...r, order_index: i })) }; }) })),
+  addScheduleRow: (scheduleId, nutrient) => set((s) => ({ feedSchedules: s.feedSchedules.map((f) => f.id === scheduleId && !f.rows.some((r) => r.nutrient_id === nutrient.id) ? { ...f, rows: [...f.rows, { id: id(), nutrient_id: nutrient.id, nutrient_name: nutrient.name, nutrient_type: nutrient.form, category: nutrient.category, amounts: amounts(), order_index: f.rows.length }] } : f) })),
 
-      addNutrient: (nutrient) => set((s) => ({ nutrients: [...s.nutrients, nutrient] })),
-      updateNutrient: (id, updates) =>
-        set((s) => {
-          const nutrients = s.nutrients.map((n) => (n.id === id ? { ...n, ...updates } : n));
-          const updated = nutrients.find((n) => n.id === id);
-          const feedSchedules = updated
-            ? s.feedSchedules.map((f) => ({
-                ...f,
-                rows: f.rows.map((r) =>
-                  r.nutrient_id === id
-                    ? {
-                        ...r,
-                        nutrient_name: updated.name,
-                        nutrient_type: updated.form,
-                        category: updated.category,
-                      }
-                    : r
-                ),
-              }))
-            : s.feedSchedules;
-          return { nutrients, feedSchedules };
-        }),
-      deleteNutrient: (id) => set((s) => ({ nutrients: s.nutrients.filter((n) => n.id !== id) })),
+  addNutrient: (nutrient) => set((s) => ({ nutrients: [...s.nutrients, { ...nutrient, active: nutrient.active ?? true, unit: unit(nutrient.form), type: nutrient.form }] })),
+  updateNutrient: (nid, updates) => set((s) => { const nutrients = s.nutrients.map((n) => n.id === nid ? { ...n, ...updates, unit: updates.form ? unit(updates.form) : n.unit, type: updates.form ?? n.type } : n); const updated = nutrients.find((n) => n.id === nid); return { nutrients, feedSchedules: updated ? s.feedSchedules.map((f) => ({ ...f, rows: f.rows.map((r) => r.nutrient_id === nid ? { ...r, nutrient_name: updated.name, nutrient_type: updated.form, category: updated.category } : r) })) : s.feedSchedules }; }),
+  deleteNutrient: (nid) => set((s) => ({ nutrients: s.nutrients.map((n) => n.id === nid ? { ...n, active: false } : n) })),
 
-      addTask: (task) => set((s) => ({ tasks: [...s.tasks, task] })),
-      updateTask: (id, updates) =>
-        set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)) })),
-      deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
-      toggleTask: (id) =>
-        set((s) => ({
-          tasks: s.tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-        })),
-
-      addEvent: (event) => set((s) => ({ events: [...s.events, event] })),
-      deleteEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
-
-      addParameterLog: (log) => set((s) => ({ parameterLogs: [...s.parameterLogs, log] })),
-
-      addFeedLog: (log) => set((s) => ({ feedLogs: [...s.feedLogs, log] })),
-
-      addStrain: (strain) => set((s) => ({ strains: [...s.strains, strain] })),
-      deleteStrain: (id) => set((s) => ({ strains: s.strains.filter((s2) => s2.id !== id) })),
-      addBreeder: (breeder) => set((s) => ({ breeders: [...s.breeders, breeder] })),
-    }),
-    {
-      name: 'hydro-grow-os',
-      version: 3,
-      migrate: (persistedState: any, version) => {
-        if (!persistedState) return persistedState;
-        if (version < 2) {
-          // Replace legacy nutrients with new catalog
-          persistedState.nutrients = [
-            { id: 'part-a', name: 'Part A', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
-            { id: 'part-b', name: 'Part B', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
-            { id: 'bloom', name: 'Bloom', brand: 'DTR', type: 'dry', form: 'dry', category: 'nutrient', unit: 'g/L' },
-            { id: 'front-row-si', name: 'Front Row Si', brand: 'Front Row', type: 'liquid', form: 'liquid', category: 'additive', unit: 'ml/L' },
-            { id: 'phoszyme', name: 'PhosZyme', brand: 'General', type: 'liquid', form: 'liquid', category: 'additive', unit: 'ml/L' },
-            { id: 'cal-hypo', name: 'Calcium Hypochlorite', brand: 'General', type: 'dry', form: 'dry', category: 'treatment', unit: 'g/L' },
-          ];
-          // Add DTR schedules if not already there
-          const existing = new Set((persistedState.feedSchedules || []).map((f: any) => f.id));
-          persistedState.feedSchedules = [
-            ...DEFAULT_FEED_SCHEDULES.filter((f) => !existing.has(f.id)),
-            ...(persistedState.feedSchedules || []),
-          ];
-        }
-        if (version < 3) {
-          // Refresh DTR schedules with updated values + EC targets
-          const defaults = new Map(DEFAULT_FEED_SCHEDULES.map((f) => [f.id, f]));
-          persistedState.feedSchedules = (persistedState.feedSchedules || []).map((f: any) =>
-            defaults.has(f.id) ? defaults.get(f.id) : f
-          );
-          // Add any missing defaults
-          const ids = new Set(persistedState.feedSchedules.map((f: any) => f.id));
-          for (const def of DEFAULT_FEED_SCHEDULES) {
-            if (!ids.has(def.id)) persistedState.feedSchedules.push(def);
-          }
-        }
-        return persistedState;
-      },
-    }
-  )
-);
+  addTask: (task) => set((s) => ({ tasks: [...s.tasks, task] })),
+  updateTask: (tid, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === tid ? { ...t, ...updates, completed: updates.status ? updates.status === 'completed' : updates.completed ?? t.completed } : t) })),
+  deleteTask: (tid) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== tid) })),
+  toggleTask: (tid) => set((s) => ({ tasks: s.tasks.map((t) => t.id === tid ? { ...t, completed: !t.completed, status: !t.completed ? 'completed' : 'open' } : t) })),
+  addEvent: (event) => set((s) => ({ events: [...s.events, event] })), deleteEvent: (eid) => set((s) => ({ events: s.events.filter((e) => e.id !== eid) })),
+  addParameterLog: (log) => set((s) => ({ parameterLogs: [...s.parameterLogs, log] })), addFeedLog: (log) => set((s) => ({ feedLogs: [...s.feedLogs, log] })),
+  addStrain: (strain) => set((s) => ({ strains: [...s.strains, { ...strain, active: strain.active ?? true, updated_at: now() }] })),
+  updateStrain: (sid, updates) => set((s) => ({ strains: s.strains.map((st) => st.id === sid ? { ...st, ...updates, updated_at: now() } : st) })),
+  deleteStrain: (sid) => set((s) => ({ strains: s.strains.map((st) => st.id === sid ? { ...st, active: false, updated_at: now() } : st) })),
+}), { name: 'hydro-grow-os', version: 6, migrate: (state: any) => ({ ...state, nutrients: (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry') })), feedSchedules: state?.feedSchedules?.length ? state.feedSchedules.map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) })) : DEFAULT_FEED_SCHEDULES, environments: (state?.environments ?? []).map((e: any) => ({ ...e, system_description: e.system_description ?? '', parameter_ids: e.parameter_ids ?? [], task_templates: e.task_templates ?? [] })), strains: (state?.strains ?? []).map((st: any) => ({ id: st.id, name: st.name, breeder: st.breeder ?? st.breeder_name ?? '', veg_weeks: st.veg_weeks ?? Math.ceil((st.veg_days_est ?? 28) / 7), flower_weeks: st.flower_weeks ?? Math.ceil((st.flower_days_est ?? 56) / 7), traits: st.traits ?? [], notes: st.notes ?? '', active: st.active ?? true, updated_at: st.updated_at ?? now() })), parameters: state?.parameters ?? [{ id: 'ph', name: 'pH', unit: 'pH' }, { id: 'ec', name: 'EC', unit: 'mS/cm' }], growStrains: state?.growStrains ?? [], environmentTimeline: state?.environmentTimeline ?? [] }) }));

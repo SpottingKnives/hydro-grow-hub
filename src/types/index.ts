@@ -1,25 +1,90 @@
-export type GrowStage = 'nursery' | 'veg' | 'stretch' | 'stack' | 'swell' | 'ripen' | 'dry' | 'cure';
+export type GrowStage = 'veg' | 'stretch' | 'stack' | 'swell' | 'ripen';
 export type GrowStatus = 'active' | 'completed' | 'archived';
-export type EventType = 'feed' | 'water' | 'transplant' | 'issue' | 'note' | 'stage_change';
+export type EventType = 'feed' | 'water' | 'transplant' | 'issue' | 'note' | 'stage_change' | 'environment_change' | 'stage_suggestion';
 export type NutrientType = 'dry' | 'liquid';
 export type NutrientCategory = 'nutrient' | 'additive' | 'treatment';
-export type Priority = 'low' | 'medium' | 'high';
+export type FeedMode = 'fixed' | 'guided';
+export type TaskTriggerType = 'on_enter' | 'after_days' | 'on_stage';
+export type TaskStatus = 'open' | 'completed';
 
-export interface Breeder {
+export interface Nutrient {
   id: string;
   name: string;
+  category: NutrientCategory;
+  form: NutrientType;
+  active: boolean;
+  brand?: string;
+  type?: NutrientType;
+  unit?: string;
+}
+
+export interface FeedSchedule {
+  id: string;
+  name: string;
+  notes: string;
+  rows: FeedScheduleRow[];
+  ec_targets: Partial<Record<GrowStage, { min: number; max: number }>>;
+  created_at: string;
+}
+
+export interface FeedScheduleRow {
+  id: string;
+  nutrient_id: string;
+  nutrient_name: string;
+  nutrient_type: NutrientType;
+  category: NutrientCategory;
+  amounts: Record<GrowStage, number>;
+  order_index: number;
+}
+
+export interface Parameter {
+  id: string;
+  name: string;
+  unit: string;
+}
+
+export interface EnvironmentTaskTemplate {
+  id: string;
+  environment_id: string;
+  name: string;
+  trigger_type: TaskTriggerType;
+  trigger_offset_days: number;
+  trigger_stage: GrowStage | null;
+}
+
+export interface Environment {
+  id: string;
+  name: string;
+  supported_stages: GrowStage[];
+  site_count: number;
+  system_description: string;
+  parameter_ids: string[];
+  task_templates: EnvironmentTaskTemplate[];
 }
 
 export interface Strain {
   id: string;
   name: string;
-  breeder_id: string;
-  breeder_name?: string;
-  veg_days_est: number;
-  flower_days_est: number;
-  stretch_percent: number;
+  breeder: string;
+  veg_weeks: number;
+  flower_weeks: number;
   traits: string[];
   notes: string;
+  active: boolean;
+  updated_at: string;
+  breeder_name?: string;
+  veg_days_est?: number;
+  flower_days_est?: number;
+}
+
+export interface GrowStrain {
+  id: string;
+  grow_cycle_id: string;
+  strain_id: string | null;
+  plant_count: number;
+  strain_name: string;
+  veg_weeks: number;
+  flower_weeks: number;
 }
 
 export interface GrowCycle {
@@ -29,6 +94,9 @@ export interface GrowCycle {
   status: GrowStatus;
   current_stage: GrowStage;
   stage_start_date: string;
+  veg_weeks: number;
+  flower_weeks: number;
+  feed_mode: FeedMode;
   environment_id: string | null;
   feed_schedule_id: string | null;
   strains: string[];
@@ -43,50 +111,29 @@ export interface StageHistory {
   ended_at: string | null;
 }
 
-export interface Environment {
+export interface GrowEnvironmentTimeline {
   id: string;
-  name: string;
-  supported_stages: GrowStage[];
-  site_count: number;
-  monitored_params: string[];
-}
-
-export interface Nutrient {
-  id: string;
-  name: string;
-  brand: string;
-  type: NutrientType;
-  unit: string;
-  category: NutrientCategory;
-  form: NutrientType;
-}
-
-export interface FeedSchedule {
-  id: string;
-  name: string;
-  rows: FeedScheduleRow[];
-  ec_targets?: Partial<Record<GrowStage, { min: number; max: number }>>;
-  created_at?: string;
-}
-
-export interface FeedScheduleRow {
-  nutrient_id: string;
-  nutrient_name: string;
-  nutrient_type: NutrientType;
-  category: NutrientCategory;
-  amounts: Record<string, number>; // stage -> amount
+  grow_cycle_id: string;
+  environment_id: string;
+  environment_name: string;
+  start_date: string;
+  end_date: string | null;
+  snapshot: Pick<Environment, 'name' | 'supported_stages' | 'site_count' | 'system_description' | 'parameter_ids'>;
 }
 
 export interface GrowTask {
   id: string;
   grow_cycle_id: string | null;
+  name: string;
   title: string;
   description: string;
   due_date: string | null;
   stage_trigger: GrowStage | null;
-  priority: Priority;
+  status: TaskStatus;
   completed: boolean;
-  reminder_time: string | null;
+  generated_from_environment: boolean;
+  priority?: 'low' | 'medium' | 'high';
+  reminder_time?: string | null;
 }
 
 export interface GrowEvent {
@@ -102,10 +149,9 @@ export interface GrowEvent {
 export interface ParameterLog {
   id: string;
   grow_cycle_id: string;
-  environment_id: string | null;
-  timestamp: string;
-  param: string;
+  parameter_id: string;
   value: number;
+  timestamp: string;
 }
 
 export interface AlertRule {
@@ -119,11 +165,15 @@ export interface AlertRule {
 export interface FeedLog {
   id: string;
   grow_cycle_id: string;
+  feed_schedule_id?: string | null;
+  stage: GrowStage;
   date: string;
+  timestamp: string;
   water_volume: number;
+  liters: number;
   nutrients: { nutrient_id: string; name: string; amount: number; unit: string }[];
-  additives?: { nutrient_id: string; name: string; amount: number; unit: string }[];
-  treatments?: { nutrient_id: string; name: string; amount: number; unit: string }[];
+  additives: { nutrient_id: string; name: string; amount: number; unit: string }[];
+  treatments: { nutrient_id: string; name: string; amount: number; unit: string }[];
   ec_measured?: number | null;
 }
 
@@ -136,27 +186,21 @@ export const CATEGORY_LABELS: Record<NutrientCategory, string> = {
 export const formUnit = (form: NutrientType) => (form === 'liquid' ? 'ml/L' : 'g/L');
 export const formUnitShort = (form: NutrientType) => (form === 'liquid' ? 'ml' : 'g');
 
-export const STAGES: GrowStage[] = ['nursery', 'veg', 'stretch', 'stack', 'swell', 'ripen', 'dry', 'cure'];
-export const FEED_STAGES: GrowStage[] = ['veg', 'stretch', 'stack', 'swell', 'ripen'];
+export const STAGES: GrowStage[] = ['veg', 'stretch', 'stack', 'swell', 'ripen'];
+export const FEED_STAGES: GrowStage[] = STAGES;
 
 export const STAGE_COLORS: Record<GrowStage, string> = {
-  nursery: 'bg-stage-nursery',
   veg: 'bg-stage-veg',
   stretch: 'bg-stage-stretch',
   stack: 'bg-stage-stack',
   swell: 'bg-stage-swell',
   ripen: 'bg-stage-ripen',
-  dry: 'bg-stage-dry',
-  cure: 'bg-stage-cure',
 };
 
 export const STAGE_TEXT_COLORS: Record<GrowStage, string> = {
-  nursery: 'text-stage-nursery',
   veg: 'text-stage-veg',
   stretch: 'text-stage-stretch',
   stack: 'text-stage-stack',
   swell: 'text-stage-swell',
   ripen: 'text-stage-ripen',
-  dry: 'text-stage-dry',
-  cure: 'text-stage-cure',
 };
