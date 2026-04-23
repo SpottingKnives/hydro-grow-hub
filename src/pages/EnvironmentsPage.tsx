@@ -21,7 +21,7 @@ export default function EnvironmentsPage() {
   const openForm = (env?: Environment) => { setForm(env ? { id: env.id, name: env.name, site_count: String(env.site_count), supported_stages: env.supported_stages, system_description: env.system_description, parameter_ids: env.parameter_ids, taskName: "", taskTrigger: "on_enter", taskOffset: "0", taskStage: "veg" } : empty); setOpen(true); };
   const toggleStage = (stage: GrowStage) => setForm((p) => ({ ...p, supported_stages: p.supported_stages.includes(stage) ? p.supported_stages.filter((s) => s !== stage) : [...p.supported_stages, stage] }));
   const toggleParameter = (pid: string) => setForm((p) => ({ ...p, parameter_ids: p.parameter_ids.includes(pid) ? p.parameter_ids.filter((id) => id !== pid) : [...p.parameter_ids, pid] }));
-  const createParam = () => { if (!newParam.name.trim()) return; const p = { id: crypto.randomUUID(), name: newParam.name.trim(), unit: newParam.unit.trim() }; addParameter(p); setForm((f) => ({ ...f, parameter_ids: [...f.parameter_ids, p.id] })); setNewParam({ name: "", unit: "" }); };
+  const createParam = () => { if (!newParam.name.trim()) return; const p = { id: crypto.randomUUID(), name: newParam.name.trim(), unit: newParam.unit.trim(), active: true }; addParameter(p); setForm((f) => ({ ...f, parameter_ids: [...f.parameter_ids, p.id] })); setNewParam({ name: "", unit: "" }); };
   const save = () => {
     if (!form.name.trim()) return;
     const base = { name: form.name.trim(), site_count: parseInt(form.site_count) || 1, supported_stages: form.supported_stages, system_description: form.system_description, parameter_ids: form.parameter_ids };
