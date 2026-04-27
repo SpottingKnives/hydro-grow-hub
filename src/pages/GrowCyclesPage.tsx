@@ -4,24 +4,189 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Plus, Trash2, ChevronRight, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
-import { type FeedMode, type GrowCycle, type GrowStrain, type GrowStage } from "@/types";
+import { STAGES, type FeedMode, type GrowCycle, type GrowStage, type Plant } from "@/types";
 import { Link } from "react-router-dom";
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, strains, growStrains, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
+  const { growCycles, environments, feedSchedules, strains, plants, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", start_date: format(new Date(), "yyyy-MM-dd"), veg_weeks: "4", flower_weeks: "8", environment_id: "", feed_schedule_id: "", feed_mode: "fixed" as FeedMode, strain_id: "", plant_count: "1" });
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    custom: "Grow",
+    starting_stage: "veg" as GrowStage,
+    flower_weeks: "8",
+    environment_id: "",
+    feed_schedule_id: "",
+    feed_mode: "fixed" as FeedMode,
+    strain_id: "",
+    plant_count: "1",
+  });
   const [selected, setSelected] = useState<{ strain_id: string; plant_count: string }[]>([]);
-  const addStrain = () => { if (!form.strain_id) return; setSelected([...selected, { strain_id: form.strain_id, plant_count: form.plant_count || "1" }]); setForm({ ...form, strain_id: "", plant_count: "1" }); };
-  const create = () => {
-    const gid = crypto.randomUUID(); const start = new Date(form.start_date).toISOString();
-    const cycle: GrowCycle = { id: gid, name: form.name.trim() || `Grow ${format(new Date(form.start_date), "MMM yyyy")}`, start_date: start, status: "active", current_stage: "veg", stage_start_date: start, veg_weeks: parseInt(form.veg_weeks) || 4, flower_weeks: parseInt(form.flower_weeks) || 8, feed_mode: form.feed_mode, environment_id: null, feed_schedule_id: form.feed_schedule_id || null, strains: selected.map((s) => s.strain_id), created_at: new Date().toISOString() };
-    const links: GrowStrain[] = selected.map((link) => { const s = strains.find((x) => x.id === link.strain_id)!; return { id: crypto.randomUUID(), grow_cycle_id: gid, strain_id: s.id, plant_count: parseInt(link.plant_count) || 1, strain_name: s.name, veg_weeks: s.veg_weeks, flower_weeks: s.flower_weeks }; });
-    addGrowCycle(cycle, links); if (form.environment_id) setTimeout(() => moveGrowEnvironment(gid, form.environment_id, form.start_date), 0); setOpen(false); setSelected([]);
+
+  const addStrain = () => {
+    if (!form.strain_id) return;
+    setSelected([...selected, { strain_id: form.strain_id, plant_count: form.plant_count || "1" }]);
+    setForm({ ...form, strain_id: "", plant_count: "1" });
   };
-  return <div className="space-y-6 max-w-5xl"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold text-foreground">Grow Cycles</h1><Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-1" /> New Grow</Button></div>{growCycles.length === 0 ? <div className="glass-card p-12 text-center"><p className="text-muted-foreground">No grow cycles yet.</p></div> : <div className="space-y-3">{growCycles.map((cycle) => { const days = Math.max(0, Math.floor((Date.now() - new Date(cycle.start_date).getTime()) / 86400000)); const linked = growStrains.filter((s) => s.grow_cycle_id === cycle.id); const flowerTimes = new Set(linked.map((s) => s.flower_weeks)); return <Link key={cycle.id} to={`/grows/${cycle.id}`} className="glass-card p-4 flex items-center justify-between gap-3 hover:border-primary/30 transition-colors block"><div className="min-w-0"><h3 className="font-semibold text-foreground truncate">{cycle.name}</h3><p className="text-xs text-muted-foreground">Day {days} · {cycle.veg_weeks}w veg · {cycle.flower_weeks}w flower · {cycle.feed_mode}</p>{linked.length > 0 && <p className="text-xs text-muted-foreground truncate">{linked.map((s) => `${s.strain_name} x${s.plant_count}`).join(" · ")}</p>}{flowerTimes.size > 1 && <p className="text-xs text-warning flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Mixed flowering times</p>}</div><div className="flex items-center gap-2 shrink-0"><StageBadge stage={cycle.current_stage} /><StatusBadge status={cycle.status} /><Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); deleteGrowCycle(cycle.id); }}><Trash2 className="w-4 h-4" /></Button><ChevronRight className="w-4 h-4 text-muted-foreground" /></div></Link>; })}</div>}<Dialog open={open} onOpenChange={setOpen}><DialogContent className="bg-card border-border max-w-2xl"><DialogHeader><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader><div className="space-y-4 mt-2"><Input placeholder="Grow name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" /><div className="grid grid-cols-3 gap-3"><Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="bg-muted border-border" /><Input type="number" placeholder="Veg weeks" value={form.veg_weeks} onChange={(e) => setForm({ ...form, veg_weeks: e.target.value })} className="bg-muted border-border" /><Input type="number" placeholder="Flower weeks" value={form.flower_weeks} onChange={(e) => setForm({ ...form, flower_weeks: e.target.value })} className="bg-muted border-border" /></div><div className="grid grid-cols-1 md:grid-cols-3 gap-3"><Select value={form.feed_mode} onValueChange={(v) => setForm({ ...form, feed_mode: v as FeedMode })}><SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fixed">Fixed feed</SelectItem><SelectItem value="guided">Guided feed</SelectItem></SelectContent></Select><Select value={form.environment_id} onValueChange={(v) => setForm({ ...form, environment_id: v })}><SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Environment" /></SelectTrigger><SelectContent>{environments.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select><Select value={form.feed_schedule_id} onValueChange={(v) => setForm({ ...form, feed_schedule_id: v })}><SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Feed schedule" /></SelectTrigger><SelectContent>{feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><label className="text-sm text-muted-foreground">Strains</label><div className="grid grid-cols-[1fr_88px_auto] gap-2"><Select value={form.strain_id} onValueChange={(v) => setForm({ ...form, strain_id: v })}><SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Add strain" /></SelectTrigger><SelectContent>{strains.filter((s) => s.active).map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><Input type="number" min={1} value={form.plant_count} onChange={(e) => setForm({ ...form, plant_count: e.target.value })} className="bg-muted border-border" /><Button variant="outline" onClick={addStrain}>Add</Button></div>{selected.map((s, i) => { const st = strains.find((x) => x.id === s.strain_id); return <div key={`${s.strain_id}-${i}`} className="flex justify-between text-sm bg-muted/50 rounded-lg px-3 py-2"><span>{st?.name} x{s.plant_count}</span><button className="text-muted-foreground" onClick={() => setSelected(selected.filter((_, idx) => idx !== i))}>Remove</button></div>; })}</div><Button onClick={create} className="w-full gradient-primary text-primary-foreground">Create Grow</Button></div></DialogContent></Dialog></div>;
+
+  const generatedName = `${form.custom.trim() || "Grow"} - ${todayStr()}`;
+  const eligibleEnvs = environments.filter((e) => e.supported_stages.includes(form.starting_stage));
+
+  const create = () => {
+    const gid = crypto.randomUUID();
+    const start = new Date().toISOString();
+    const flower = parseInt(form.flower_weeks) || 8;
+    const cycle: GrowCycle = {
+      id: gid, name: generatedName, custom_name: form.custom.trim() || "Grow",
+      start_date: start, status: "active",
+      current_stage: form.starting_stage, stage_start_date: start,
+      flower_weeks: flower, feed_mode: form.feed_mode,
+      environment_id: null, feed_schedule_id: form.feed_schedule_id || null,
+      strains: selected.map((s) => s.strain_id),
+      created_at: new Date().toISOString(),
+    };
+    // Generate plant records
+    const plantRecs: Plant[] = [];
+    const counts: Record<string, number> = {};
+    for (const link of selected) {
+      const strain = strains.find((x) => x.id === link.strain_id);
+      if (!strain) continue;
+      const qty = parseInt(link.plant_count) || 1;
+      const base = `${strain.name.replace(/\s+/g, "")}-${(form.custom.trim() || "Grow").replace(/\s+/g, "")}`;
+      for (let i = 0; i < qty; i++) {
+        counts[strain.id] = (counts[strain.id] || 0) + 1;
+        plantRecs.push({
+          id: crypto.randomUUID(), grow_cycle_id: gid, strain_id: strain.id, strain_name: strain.name,
+          plant_tag: `${base}-${String(counts[strain.id]).padStart(2, "0")}`,
+          status: "active", created_at: new Date().toISOString(), removed_at: null,
+        });
+      }
+    }
+    addGrowCycle(cycle, plantRecs);
+    if (form.environment_id) setTimeout(() => moveGrowEnvironment(gid, form.environment_id, todayStr()), 0);
+    setOpen(false);
+    setSelected([]);
+    setForm({ custom: "Grow", starting_stage: "veg", flower_weeks: "8", environment_id: "", feed_schedule_id: "", feed_mode: "fixed", strain_id: "", plant_count: "1" });
+  };
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Grow Cycles</h1>
+        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-1" /> New Grow</Button>
+      </div>
+      {growCycles.length === 0 ? (
+        <div className="glass-card p-12 text-center"><p className="text-muted-foreground">No grow cycles yet.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {[...growCycles].sort((a, b) => b.created_at.localeCompare(a.created_at)).map((cycle) => {
+            const days = Math.max(0, Math.floor((Date.now() - new Date(cycle.start_date).getTime()) / 86400000));
+            const cyclePlants = plants.filter((p) => p.grow_cycle_id === cycle.id);
+            const active = cyclePlants.filter((p) => p.status === "active");
+            const flowerTimes = new Set<number>();
+            active.forEach((p) => { const s = strains.find((x) => x.id === p.strain_id); if (s) flowerTimes.add(s.flower_weeks); });
+            const byStrain: Record<string, number> = {};
+            active.forEach((p) => { byStrain[p.strain_name] = (byStrain[p.strain_name] || 0) + 1; });
+            return (
+              <Link key={cycle.id} to={`/grows/${cycle.id}`} className="glass-card p-4 flex items-center justify-between gap-3 hover:border-primary/30 transition-colors block">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">{cycle.name}</h3>
+                  <p className="text-xs text-muted-foreground">Day {days} · {active.length} plants · est. {cycle.flower_weeks}w flower · {cycle.feed_mode}</p>
+                  {Object.keys(byStrain).length > 0 && <p className="text-xs text-muted-foreground truncate">{Object.entries(byStrain).map(([n, c]) => `${n} x${c}`).join(" · ")}</p>}
+                  {flowerTimes.size > 1 && <p className="text-xs text-warning flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Mixed flowering times</p>}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StageBadge stage={cycle.current_stage} />
+                  <StatusBadge status={cycle.status} />
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); setConfirmDelete(cycle.id); }}><Trash2 className="w-4 h-4" /></Button>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="bg-card border-border max-w-2xl">
+          <DialogHeader><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs text-muted-foreground">Name prefix</label>
+              <Input placeholder="Grow" value={form.custom} onChange={(e) => setForm({ ...form, custom: e.target.value })} className="bg-muted border-border" />
+              <p className="text-xs text-muted-foreground mt-1">Will be saved as: <span className="text-primary">{generatedName}</span></p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Starting stage</label>
+                <Select value={form.starting_stage} onValueChange={(v) => setForm({ ...form, starting_stage: v as GrowStage, environment_id: "" })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent>{STAGES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Estimated Flower Duration (weeks)</label>
+                <Input type="number" value={form.flower_weeks} onChange={(e) => setForm({ ...form, flower_weeks: e.target.value })} className="bg-muted border-border" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Select value={form.feed_mode} onValueChange={(v) => setForm({ ...form, feed_mode: v as FeedMode })}>
+                <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="fixed">Fixed feed</SelectItem><SelectItem value="guided">Guided feed</SelectItem></SelectContent>
+              </Select>
+              <Select value={form.environment_id} onValueChange={(v) => setForm({ ...form, environment_id: v })}>
+                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Environment"} /></SelectTrigger>
+                <SelectContent>{eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+              </Select>
+              <Select value={form.feed_schedule_id} onValueChange={(v) => setForm({ ...form, feed_schedule_id: v })}>
+                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Feed schedule" /></SelectTrigger>
+                <SelectContent>{feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Plants</label>
+              <div className="grid grid-cols-[1fr_88px_auto] gap-2">
+                <Select value={form.strain_id} onValueChange={(v) => setForm({ ...form, strain_id: v })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Add strain" /></SelectTrigger>
+                  <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input type="number" min={1} value={form.plant_count} onChange={(e) => setForm({ ...form, plant_count: e.target.value })} className="bg-muted border-border" />
+                <Button variant="outline" onClick={addStrain}>Add</Button>
+              </div>
+              {selected.map((s, i) => {
+                const st = strains.find((x) => x.id === s.strain_id);
+                return (
+                  <div key={`${s.strain_id}-${i}`} className="flex justify-between text-sm bg-muted/50 rounded-lg px-3 py-2">
+                    <span>{st?.name} x{s.plant_count}</span>
+                    <button className="text-muted-foreground" onClick={() => setSelected(selected.filter((_, idx) => idx !== i))}>Remove</button>
+                  </div>
+                );
+              })}
+            </div>
+            <Button onClick={create} className="w-full gradient-primary text-primary-foreground">Create Grow</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete grow cycle?</AlertDialogTitle>
+            <AlertDialogDescription>This will remove the grow cycle and all linked plants, tasks, events, and timeline entries. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmDelete) deleteGrowCycle(confirmDelete); setConfirmDelete(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }
