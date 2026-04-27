@@ -89,6 +89,19 @@ export interface GrowStrain {
   flower_weeks: number;
 }
 
+export type PlantStatus = 'active' | 'removed';
+
+export interface Plant {
+  id: string;
+  grow_cycle_id: string;
+  strain_id: string | null;
+  strain_name: string;
+  plant_tag: string;
+  status: PlantStatus;
+  created_at: string;
+  removed_at: string | null;
+}
+
 export interface GrowCycle {
   id: string;
   name: string;
@@ -96,13 +109,13 @@ export interface GrowCycle {
   status: GrowStatus;
   current_stage: GrowStage;
   stage_start_date: string;
-  veg_weeks: number;
   flower_weeks: number;
   feed_mode: FeedMode;
   environment_id: string | null;
   feed_schedule_id: string | null;
   strains: string[];
   created_at: string;
+  custom_name?: string;
 }
 
 export interface StageHistory {
@@ -190,6 +203,14 @@ export const formUnitShort = (form: NutrientType) => (form === 'liquid' ? 'ml' :
 
 export const STAGES: GrowStage[] = ['nursery', 'veg', 'stretch', 'stack', 'swell', 'ripen', 'dry', 'cure'];
 export const FEED_STAGES: GrowStage[] = ['veg', 'stretch', 'stack', 'swell', 'ripen'];
+export const FLOWER_STAGES: GrowStage[] = ['stretch', 'stack', 'swell', 'ripen'];
+export const STAGE_GROUPS: { label: string; stages: GrowStage[] }[] = [
+  { label: 'Nursery', stages: ['nursery'] },
+  { label: 'Veg', stages: ['veg'] },
+  { label: 'Flower', stages: FLOWER_STAGES },
+  { label: 'Dry', stages: ['dry'] },
+  { label: 'Cure', stages: ['cure'] },
+];
 
 export const STAGE_COLORS: Record<GrowStage, string> = {
   nursery: 'bg-stage-nursery',
