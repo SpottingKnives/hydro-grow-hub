@@ -4,15 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory, type NutrientType } from "@/types";
 
 const empty = { name: "", category: "nutrient" as NutrientCategory, form: "dry" as NutrientType };
 
 export default function NutrientsPage() {
-  const { nutrients, addNutrient, updateNutrient, deleteNutrient } = useStore();
+  const { nutrients, feedSchedules, feedLogs, addNutrient, updateNutrient, deleteNutrient } = useStore();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<typeof empty & { id?: string }>(empty);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const isUsed = (nid: string) => feedSchedules.some((s) => s.rows.some((r) => r.nutrient_id === nid)) || feedLogs.some((l) => [...(l.nutrients||[]), ...(l.additives||[]), ...(l.treatments||[])].some((it) => it.nutrient_id === nid));
+  const handleDelete = (nid: string) => { if (isUsed(nid)) setConfirmId(nid); else deleteNutrient(nid); };
 
   const save = () => {
     if (!form.name.trim()) return;
@@ -50,11 +55,7 @@ export default function NutrientsPage() {
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Button variant="ghost" size="sm" className="h-8" onClick={() => openForm(undefined, n)}><Pencil className="w-4 h-4 mr-1" /> Edit</Button>
-                      {n.active ? (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteNutrient(n.id)}><Trash2 className="w-4 h-4" /></Button>
-                      ) : (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => updateNutrient(n.id, { active: true })}><RotateCcw className="w-4 h-4" /></Button>
-                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(n.id)}><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 ))}
@@ -77,6 +78,18 @@ export default function NutrientsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!confirmId} onOpenChange={(o) => !o && setConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete item?</AlertDialogTitle>
+            <AlertDialogDescription>This item is used in feed schedules or logs. Delete anyway? Historical logs will remain intact; it will be removed from schedules.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmId) deleteNutrient(confirmId); setConfirmId(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
