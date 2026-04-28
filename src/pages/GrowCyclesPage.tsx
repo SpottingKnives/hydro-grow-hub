@@ -8,7 +8,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Plus, Trash2, ChevronRight, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
+import { FormField } from "@/components/forms/FormField";
+import { FormFooter } from "@/components/forms/FormFooter";
 import { STAGES, type FeedMode, type GrowCycle, type GrowStage, type Plant } from "@/types";
 import { Link } from "react-router-dom";
 
@@ -118,59 +119,75 @@ export default function GrowCyclesPage() {
         <DialogContent className="bg-card border-border max-w-2xl">
           <DialogHeader><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-xs text-muted-foreground">Name prefix</label>
-              <Input placeholder="Grow" value={form.custom} onChange={(e) => setForm({ ...form, custom: e.target.value })} className="bg-muted border-border" />
-              <p className="text-xs text-muted-foreground mt-1">Will be saved as: <span className="text-primary">{generatedName}</span></p>
-            </div>
+            <FormField label="Name Prefix" htmlFor="grow-prefix" helper={<>Will be saved as <span className="text-primary">{generatedName}</span></>}>
+              <Input id="grow-prefix" value={form.custom} onChange={(e) => setForm({ ...form, custom: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground">Starting stage</label>
+              <FormField label="Starting Stage" helper="Determines which environments are eligible">
                 <Select value={form.starting_stage} onValueChange={(v) => setForm({ ...form, starting_stage: v as GrowStage, environment_id: "" })}>
                   <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>{STAGES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
                 </Select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Estimated Flower Duration (weeks)</label>
-                <Input type="number" value={form.flower_weeks} onChange={(e) => setForm({ ...form, flower_weeks: e.target.value })} className="bg-muted border-border" />
-              </div>
+              </FormField>
+              <FormField label="Est. Flower Duration (weeks)" htmlFor="grow-flower" helper="Used for stage timing suggestions">
+                <Input id="grow-flower" type="number" inputMode="decimal" step="0.1" min="0" value={form.flower_weeks} onChange={(e) => setForm({ ...form, flower_weeks: e.target.value })} className="bg-muted border-border" />
+              </FormField>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+            <FormField label="Feed Mode" helper="Fixed follows the schedule exactly. Guided suggests values and logs your actual measurements.">
               <Select value={form.feed_mode} onValueChange={(v) => setForm({ ...form, feed_mode: v as FeedMode })}>
                 <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="fixed">Fixed feed</SelectItem><SelectItem value="guided">Guided feed</SelectItem></SelectContent>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixed feed</SelectItem>
+                  <SelectItem value="guided">Guided feed</SelectItem>
+                </SelectContent>
               </Select>
-              <Select value={form.environment_id} onValueChange={(v) => setForm({ ...form, environment_id: v })}>
-                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Environment"} /></SelectTrigger>
-                <SelectContent>{eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
-              </Select>
-              <Select value={form.feed_schedule_id} onValueChange={(v) => setForm({ ...form, feed_schedule_id: v })}>
-                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Feed schedule" /></SelectTrigger>
-                <SelectContent>{feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Plants</label>
-              <div className="grid grid-cols-[1fr_88px_auto] gap-2">
-                <Select value={form.strain_id} onValueChange={(v) => setForm({ ...form, strain_id: v })}>
-                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Add strain" /></SelectTrigger>
-                  <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+            </FormField>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <FormField label="Environment" helper={eligibleEnvs.length === 0 ? "No environment supports the selected starting stage" : "Filtered by starting stage"}>
+                <Select value={form.environment_id} onValueChange={(v) => setForm({ ...form, environment_id: v })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Select environment"} /></SelectTrigger>
+                  <SelectContent>{eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
                 </Select>
-                <Input type="number" min={1} value={form.plant_count} onChange={(e) => setForm({ ...form, plant_count: e.target.value })} className="bg-muted border-border" />
-                <Button variant="outline" onClick={addStrain}>Add</Button>
-              </div>
-              {selected.map((s, i) => {
-                const st = strains.find((x) => x.id === s.strain_id);
-                return (
-                  <div key={`${s.strain_id}-${i}`} className="flex justify-between text-sm bg-muted/50 rounded-lg px-3 py-2">
-                    <span>{st?.name} x{s.plant_count}</span>
-                    <button className="text-muted-foreground" onClick={() => setSelected(selected.filter((_, idx) => idx !== i))}>Remove</button>
-                  </div>
-                );
-              })}
+              </FormField>
+              <FormField label="Feed Schedule" helper="Optional. Can be set later.">
+                <Select value={form.feed_schedule_id} onValueChange={(v) => setForm({ ...form, feed_schedule_id: v })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select schedule" /></SelectTrigger>
+                  <SelectContent>{feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
             </div>
-            <Button onClick={create} className="w-full gradient-primary text-primary-foreground">Create Grow</Button>
+
+            <FormField label="Plants" helper="Tags will be generated as Strain-GrowName-NN">
+              <div className="space-y-2">
+                <div className="grid grid-cols-[1fr_88px_auto] gap-2">
+                  <Select value={form.strain_id} onValueChange={(v) => setForm({ ...form, strain_id: v })}>
+                    <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select strain" /></SelectTrigger>
+                    <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input type="number" min={1} value={form.plant_count} onChange={(e) => setForm({ ...form, plant_count: e.target.value })} className="bg-muted border-border" />
+                  <Button variant="outline" onClick={addStrain} disabled={!form.strain_id}>Add</Button>
+                </div>
+                {selected.map((s, i) => {
+                  const st = strains.find((x) => x.id === s.strain_id);
+                  return (
+                    <div key={`${s.strain_id}-${i}`} className="flex justify-between text-sm bg-muted/50 rounded-lg px-3 py-2">
+                      <span>{st?.name} ×{s.plant_count}</span>
+                      <button className="text-muted-foreground hover:text-destructive" onClick={() => setSelected(selected.filter((_, idx) => idx !== i))}>Remove</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </FormField>
+
+            <FormFooter
+              onSave={create}
+              onCancel={() => setOpen(false)}
+              saveLabel="Create Grow"
+              saveDisabled={selected.length === 0}
+            />
           </div>
         </DialogContent>
       </Dialog>
