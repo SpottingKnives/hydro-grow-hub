@@ -116,9 +116,9 @@ export default function GrowCyclesPage() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl">
-          <DialogHeader><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0"><DialogTitle>New Grow Cycle</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2 px-6 overflow-y-auto flex-1 min-h-0">
             <FormField label="Name Prefix" htmlFor="grow-prefix" helper={<>Will be saved as <span className="text-primary">{generatedName}</span></>}>
               <Input id="grow-prefix" value={form.custom} onChange={(e) => setForm({ ...form, custom: e.target.value })} className="bg-muted border-border" />
             </FormField>
@@ -182,6 +182,8 @@ export default function GrowCyclesPage() {
               </div>
             </FormField>
 
+          </div>
+          <div className="px-6 pb-6 pt-2 border-t border-border/50 bg-card shrink-0">
             <FormFooter
               onSave={create}
               onCancel={() => setOpen(false)}

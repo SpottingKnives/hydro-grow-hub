@@ -186,7 +186,6 @@ export default function EnvironmentsPage() {
                       )}
                     >
                       {group.label}
-                      {group.stages.length > 1 ? ` (${group.stages.length})` : ""}
                     </button>
                   );
                 })}
