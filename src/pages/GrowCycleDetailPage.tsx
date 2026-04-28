@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { FormField } from "@/components/forms/FormField";
 import { STAGES, type GrowStage, type GrowStatus } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -111,15 +112,21 @@ export default function GrowCycleDetailPage() {
         </TabsList>
 
         <TabsContent value="plants" className="space-y-4">
-          <div className="glass-card p-4 space-y-3">
-            <h3 className="font-semibold text-foreground">Add plants</h3>
-            <div className="grid grid-cols-[1fr_88px_auto] gap-2">
-              <Select value={addStrainId} onValueChange={setAddStrainId}>
-                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Strain" /></SelectTrigger>
-                <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-              </Select>
-              <Input type="number" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} className="bg-muted border-border" />
-              <Button onClick={doAddPlants} disabled={!addStrainId} className="gradient-primary text-primary-foreground"><Plus className="w-4 h-4 mr-1" /> Add</Button>
+          <div className="glass-card p-4 space-y-4">
+            <h3 className="font-semibold text-foreground">Add Plants</h3>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
+              <FormField label="Strain" required>
+                <Select value={addStrainId} onValueChange={setAddStrainId}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select strain" /></SelectTrigger>
+                  <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
+              <FormField label="Quantity" htmlFor="plant-qty" required helper="Continues from last index">
+                <Input id="plant-qty" type="number" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} className="bg-muted border-border" />
+              </FormField>
+              <Button onClick={doAddPlants} disabled={!addStrainId} className="gradient-primary text-primary-foreground">
+                <Plus className="w-4 h-4 mr-1" /> Add
+              </Button>
             </div>
           </div>
           <div className="glass-card p-4">
