@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { FormField } from "@/components/forms/FormField";
+import { FormFooter } from "@/components/forms/FormFooter";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory, type NutrientType } from "@/types";
 
 const empty = { name: "", category: "nutrient" as NutrientCategory, form: "dry" as NutrientType };
@@ -13,11 +15,17 @@ const empty = { name: "", category: "nutrient" as NutrientCategory, form: "dry" 
 export default function NutrientsPage() {
   const { nutrients, feedSchedules, feedLogs, addNutrient, updateNutrient, deleteNutrient } = useStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<typeof empty & { id?: string }>(empty);
+  const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [confirmDeleteFromForm, setConfirmDeleteFromForm] = useState(false);
 
   const isUsed = (nid: string) => feedSchedules.some((s) => s.rows.some((r) => r.nutrient_id === nid)) || feedLogs.some((l) => [...(l.nutrients||[]), ...(l.additives||[]), ...(l.treatments||[])].some((it) => it.nutrient_id === nid));
   const handleDelete = (nid: string) => { if (isUsed(nid)) setConfirmId(nid); else deleteNutrient(nid); };
+  const handleDeleteFromForm = () => {
+    if (!form.id) return;
+    if (isUsed(form.id)) setConfirmDeleteFromForm(true);
+    else { deleteNutrient(form.id); setOpen(false); }
+  };
 
   const save = () => {
     if (!form.name.trim()) return;
@@ -27,7 +35,7 @@ export default function NutrientsPage() {
   };
 
   const openForm = (category?: NutrientCategory, item?: Nutrient) => {
-    setForm(item ? { id: item.id, name: item.name, category: item.category, form: item.form } : { ...empty, category: category ?? "nutrient" });
+    setForm(item ? { id: item.id, name: item.name, category: item.category, form: item.form, updated_at: item.updated_at } : { ...empty, category: category ?? "nutrient" });
     setOpen(true);
   };
 
@@ -68,13 +76,31 @@ export default function NutrientsPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>{form.id ? "Edit Item" : "New Item"}</DialogTitle></DialogHeader>
-          <div className="space-y-3 mt-2">
-            <Input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" />
+          <div className="space-y-4 mt-2">
+            <FormField label="Name" htmlFor="nutrient-name" required>
+              <Input id="nutrient-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" />
+            </FormField>
             <div className="grid grid-cols-2 gap-3">
-              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as NutrientCategory })}><SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger><SelectContent>{CATEGORY_ORDER.map((c) => <SelectItem key={c} value={c}>{CATEGORY_LABELS[c].slice(0, -1)}</SelectItem>)}</SelectContent></Select>
-              <Select value={form.form} onValueChange={(v) => setForm({ ...form, form: v as NutrientType })}><SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="dry">Dry (g/L)</SelectItem><SelectItem value="liquid">Liquid (ml/L)</SelectItem></SelectContent></Select>
+              <FormField label="Category" helper="Where this item appears in your feed schedule">
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as NutrientCategory })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent>{CATEGORY_ORDER.map((c) => <SelectItem key={c} value={c}>{CATEGORY_LABELS[c].slice(0, -1)}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
+              <FormField label="Form" helper="Dry uses g/L, Liquid uses ml/L">
+                <Select value={form.form} onValueChange={(v) => setForm({ ...form, form: v as NutrientType })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="dry">Dry (g/L)</SelectItem><SelectItem value="liquid">Liquid (ml/L)</SelectItem></SelectContent>
+                </Select>
+              </FormField>
             </div>
-            <Button onClick={save} className="w-full gradient-primary text-primary-foreground">Save</Button>
+            <FormFooter
+              onSave={save}
+              onCancel={() => setOpen(false)}
+              onDelete={form.id ? handleDeleteFromForm : undefined}
+              saveDisabled={!form.name.trim()}
+              lastUpdated={form.id ? form.updated_at : undefined}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -87,6 +113,18 @@ export default function NutrientsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (confirmId) deleteNutrient(confirmId); setConfirmId(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={confirmDeleteFromForm} onOpenChange={setConfirmDeleteFromForm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete item?</AlertDialogTitle>
+            <AlertDialogDescription>This item is used in feed schedules or logs. Delete anyway? Historical logs will remain intact.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (form.id) deleteNutrient(form.id); setConfirmDeleteFromForm(false); setOpen(false); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
