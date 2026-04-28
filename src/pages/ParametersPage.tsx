@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { FormField } from "@/components/forms/FormField";
+import { FormFooter } from "@/components/forms/FormFooter";
 import type { Parameter } from "@/types";
 
 const empty = { name: "", unit: "" };
@@ -12,11 +14,12 @@ const empty = { name: "", unit: "" };
 export default function ParametersPage() {
   const { parameters, environments, parameterLogs, addParameter, updateParameter, deleteParameter } = useStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<typeof empty & { id?: string }>(empty);
+  const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [confirmDeleteFromForm, setConfirmDeleteFromForm] = useState(false);
 
   const openForm = (parameter?: Parameter) => {
-    setForm(parameter ? { id: parameter.id, name: parameter.name, unit: parameter.unit } : empty);
+    setForm(parameter ? { id: parameter.id, name: parameter.name, unit: parameter.unit, updated_at: parameter.updated_at } : empty);
     setOpen(true);
   };
 
@@ -29,6 +32,11 @@ export default function ParametersPage() {
 
   const isUsed = (pid: string) => environments.some((e) => e.parameter_ids.includes(pid)) || parameterLogs.some((l) => l.parameter_id === pid);
   const handleDelete = (pid: string) => { if (isUsed(pid)) setConfirmId(pid); else deleteParameter(pid); };
+  const handleDeleteFromForm = () => {
+    if (!form.id) return;
+    if (isUsed(form.id)) { setConfirmDeleteFromForm(true); }
+    else { deleteParameter(form.id); setOpen(false); }
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -58,10 +66,20 @@ export default function ParametersPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>{form.id ? "Edit Parameter" : "New Parameter"}</DialogTitle></DialogHeader>
-          <div className="space-y-3 mt-2">
-            <Input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" />
-            <Input placeholder="Unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="bg-muted border-border" />
-            <Button onClick={save} className="w-full gradient-primary text-primary-foreground">Save</Button>
+          <div className="space-y-4 mt-2">
+            <FormField label="Parameter Name" htmlFor="param-name" required>
+              <Input id="param-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormField label="Unit" htmlFor="param-unit" helper="e.g. pH, ppm, °C, %">
+              <Input id="param-unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormFooter
+              onSave={save}
+              onCancel={() => setOpen(false)}
+              onDelete={form.id ? handleDeleteFromForm : undefined}
+              saveDisabled={!form.name.trim()}
+              lastUpdated={form.id ? form.updated_at : undefined}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -75,6 +93,19 @@ export default function ParametersPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (confirmId) deleteParameter(confirmId); setConfirmId(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDeleteFromForm} onOpenChange={setConfirmDeleteFromForm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete parameter?</AlertDialogTitle>
+            <AlertDialogDescription>This parameter is used in existing data. Delete anyway? Historical logs will remain intact.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (form.id) deleteParameter(form.id); setConfirmDeleteFromForm(false); setOpen(false); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
