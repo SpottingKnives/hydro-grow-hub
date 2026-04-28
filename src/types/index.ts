@@ -17,6 +17,7 @@ export interface Nutrient {
   brand?: string;
   type?: NutrientType;
   unit?: string;
+  updated_at?: string;
 }
 
 export interface FeedSchedule {
@@ -26,6 +27,7 @@ export interface FeedSchedule {
   rows: FeedScheduleRow[];
   ec_targets: Partial<Record<GrowStage, { min: number; max: number }>>;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface FeedScheduleRow {
@@ -43,6 +45,7 @@ export interface Parameter {
   name: string;
   unit: string;
   active: boolean;
+  updated_at?: string;
 }
 
 export interface EnvironmentTaskTemplate {
@@ -62,6 +65,7 @@ export interface Environment {
   system_description: string;
   parameter_ids: string[];
   task_templates: EnvironmentTaskTemplate[];
+  updated_at?: string;
 }
 
 export interface Strain {
