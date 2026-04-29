@@ -7,16 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ChevronRight, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, ChevronRight } from "lucide-react";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
-import { STAGES, type FeedMode, type GrowCycle, type GrowStage, type Plant } from "@/types";
+import { StrainsSection } from "@/components/StrainsSection";
+import { STAGES, type FeedMode, type GrowCycle, type GrowStage } from "@/types";
 import { Link } from "react-router-dom";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, strains, plants, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
+  const { growCycles, environments, feedSchedules, plants, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -26,16 +27,7 @@ export default function GrowCyclesPage() {
     environment_id: "",
     feed_schedule_id: "",
     feed_mode: "fixed" as FeedMode,
-    strain_id: "",
-    plant_count: "1",
   });
-  const [selected, setSelected] = useState<{ strain_id: string; plant_count: string }[]>([]);
-
-  const addStrain = () => {
-    if (!form.strain_id) return;
-    setSelected([...selected, { strain_id: form.strain_id, plant_count: form.plant_count || "1" }]);
-    setForm({ ...form, strain_id: "", plant_count: "1" });
-  };
 
   const generatedName = `${form.custom.trim() || "Grow"} - ${todayStr()}`;
   const eligibleEnvs = environments.filter((e) => e.supported_stages.includes(form.starting_stage));
@@ -50,31 +42,13 @@ export default function GrowCyclesPage() {
       current_stage: form.starting_stage, stage_start_date: start,
       flower_weeks: flower, feed_mode: form.feed_mode,
       environment_id: null, feed_schedule_id: form.feed_schedule_id || null,
-      strains: selected.map((s) => s.strain_id),
+      strains: [],
       created_at: new Date().toISOString(),
     };
-    // Generate plant records
-    const plantRecs: Plant[] = [];
-    const counts: Record<string, number> = {};
-    for (const link of selected) {
-      const strain = strains.find((x) => x.id === link.strain_id);
-      if (!strain) continue;
-      const qty = parseInt(link.plant_count) || 1;
-      const base = `${strain.name.replace(/\s+/g, "")}-${(form.custom.trim() || "Grow").replace(/\s+/g, "")}`;
-      for (let i = 0; i < qty; i++) {
-        counts[strain.id] = (counts[strain.id] || 0) + 1;
-        plantRecs.push({
-          id: crypto.randomUUID(), grow_cycle_id: gid, strain_id: strain.id, strain_name: strain.name,
-          plant_tag: `${base}-${String(counts[strain.id]).padStart(2, "0")}`,
-          status: "active", created_at: new Date().toISOString(), removed_at: null,
-        });
-      }
-    }
-    addGrowCycle(cycle, plantRecs);
+    addGrowCycle(cycle, []);
     if (form.environment_id) setTimeout(() => moveGrowEnvironment(gid, form.environment_id, todayStr()), 0);
     setOpen(false);
-    setSelected([]);
-    setForm({ custom: "Grow", starting_stage: "veg", flower_weeks: "8", environment_id: "", feed_schedule_id: "", feed_mode: "fixed", strain_id: "", plant_count: "1" });
+    setForm({ custom: "Grow", starting_stage: "veg", flower_weeks: "8", environment_id: "", feed_schedule_id: "", feed_mode: "fixed" });
   };
 
   return (
@@ -91,8 +65,6 @@ export default function GrowCyclesPage() {
             const days = Math.max(0, Math.floor((Date.now() - new Date(cycle.start_date).getTime()) / 86400000));
             const cyclePlants = plants.filter((p) => p.grow_cycle_id === cycle.id);
             const active = cyclePlants.filter((p) => p.status === "active");
-            const flowerTimes = new Set<number>();
-            active.forEach((p) => { const s = strains.find((x) => x.id === p.strain_id); if (s) flowerTimes.add(s.flower_weeks); });
             const byStrain: Record<string, number> = {};
             active.forEach((p) => { byStrain[p.strain_name] = (byStrain[p.strain_name] || 0) + 1; });
             return (
@@ -101,7 +73,6 @@ export default function GrowCyclesPage() {
                   <h3 className="font-semibold text-foreground truncate">{cycle.name}</h3>
                   <p className="text-xs text-muted-foreground">Day {days} · {active.length} plants · est. {cycle.flower_weeks}w flower · {cycle.feed_mode}</p>
                   {Object.keys(byStrain).length > 0 && <p className="text-xs text-muted-foreground truncate">{Object.entries(byStrain).map(([n, c]) => `${n} x${c}`).join(" · ")}</p>}
-                  {flowerTimes.size > 1 && <p className="text-xs text-warning flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Mixed flowering times</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <StageBadge stage={cycle.current_stage} />
@@ -160,27 +131,7 @@ export default function GrowCyclesPage() {
               </FormField>
             </div>
 
-            <FormField label="Plants" helper="Tags will be generated as Strain-GrowName-NN">
-              <div className="space-y-2">
-                <div className="grid grid-cols-[1fr_88px_auto] gap-2">
-                  <Select value={form.strain_id} onValueChange={(v) => setForm({ ...form, strain_id: v })}>
-                    <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select strain" /></SelectTrigger>
-                    <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Input type="number" min={1} value={form.plant_count} onChange={(e) => setForm({ ...form, plant_count: e.target.value })} className="bg-muted border-border" />
-                  <Button variant="outline" onClick={addStrain} disabled={!form.strain_id}>Add</Button>
-                </div>
-                {selected.map((s, i) => {
-                  const st = strains.find((x) => x.id === s.strain_id);
-                  return (
-                    <div key={`${s.strain_id}-${i}`} className="flex justify-between text-sm bg-muted/50 rounded-lg px-3 py-2">
-                      <span>{st?.name} ×{s.plant_count}</span>
-                      <button className="text-muted-foreground hover:text-destructive" onClick={() => setSelected(selected.filter((_, idx) => idx !== i))}>Remove</button>
-                    </div>
-                  );
-                })}
-              </div>
-            </FormField>
+            <p className="text-xs text-muted-foreground">After creating the grow, assign plants to slots from the grow detail page.</p>
 
           </div>
           <div className="px-6 pb-6 pt-2 border-t border-border/50 bg-card shrink-0">
@@ -188,7 +139,6 @@ export default function GrowCyclesPage() {
               onSave={create}
               onCancel={() => setOpen(false)}
               saveLabel="Create Grow"
-              saveDisabled={selected.length === 0}
             />
           </div>
         </DialogContent>
@@ -206,6 +156,10 @@ export default function GrowCyclesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <div className="border-t border-border/50 pt-6">
+        <StrainsSection />
+      </div>
     </div>
   );
 }

@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
-import { STAGE_GROUPS, type Environment, type GrowStage, type TaskTriggerType } from "@/types";
+import { STAGE_GROUPS, type Environment, type GrowStage } from "@/types";
+import { ParametersSection } from "@/components/ParametersSection";
 import { cn } from "@/lib/utils";
 
 const empty = {
@@ -19,10 +19,6 @@ const empty = {
   supported_stages: [] as GrowStage[],
   system_description: "",
   parameter_ids: [] as string[],
-  taskName: "",
-  taskTrigger: "on_enter" as TaskTriggerType,
-  taskOffset: "0",
-  taskStage: "veg" as GrowStage,
 };
 
 export default function EnvironmentsPage() {
@@ -40,10 +36,6 @@ export default function EnvironmentsPage() {
       supported_stages: env.supported_stages,
       system_description: env.system_description,
       parameter_ids: env.parameter_ids.filter((id) => parameters.find((p) => p.id === id)?.active),
-      taskName: "",
-      taskTrigger: "on_enter",
-      taskOffset: "0",
-      taskStage: "veg",
       updated_at: env.updated_at,
     } : empty);
     setOpen(true);
@@ -90,26 +82,6 @@ export default function EnvironmentsPage() {
     setOpen(false);
   };
 
-  const addTemplate = () => {
-    if (!form.id || !form.taskName.trim()) return;
-    const env = environments.find((e) => e.id === form.id);
-    if (!env) return;
-    updateEnvironment(form.id, {
-      task_templates: [
-        ...env.task_templates,
-        {
-          id: crypto.randomUUID(),
-          environment_id: form.id,
-          name: form.taskName.trim(),
-          trigger_type: form.taskTrigger,
-          trigger_offset_days: parseInt(form.taskOffset) || 0,
-          trigger_stage: form.taskTrigger === "on_stage" ? form.taskStage : null,
-        },
-      ],
-    });
-    setForm({ ...form, taskName: "", taskOffset: "0" });
-  };
-
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
@@ -144,7 +116,6 @@ export default function EnvironmentsPage() {
                   return p ? <Badge key={pid} variant="secondary" className="text-xs">{p.name}</Badge> : null;
                 })}
               </div>
-              {env.task_templates.length > 0 && <p className="text-xs text-muted-foreground">{env.task_templates.length} task templates</p>}
             </div>
           ))}
         </div>
@@ -220,24 +191,6 @@ export default function EnvironmentsPage() {
               </div>
             </FormField>
 
-            {form.id && (
-              <FormField label="New Task Template" helper="Tasks auto-generated when a grow enters this environment">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  <Input placeholder="Task name" value={form.taskName} onChange={(e) => setForm({ ...form, taskName: e.target.value })} className="bg-muted border-border md:col-span-2" />
-                  <Select value={form.taskTrigger} onValueChange={(v) => setForm({ ...form, taskTrigger: v as TaskTriggerType })}>
-                    <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="on_enter">On enter</SelectItem>
-                      <SelectItem value="after_days">After days</SelectItem>
-                      <SelectItem value="on_stage">On stage</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input type="number" value={form.taskOffset} onChange={(e) => setForm({ ...form, taskOffset: e.target.value })} className="bg-muted border-border" />
-                  <Button variant="outline" onClick={addTemplate}>Add</Button>
-                </div>
-              </FormField>
-            )}
-
             <FormFooter
               onSave={save}
               onCancel={() => setOpen(false)}
@@ -261,6 +214,10 @@ export default function EnvironmentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <div className="border-t border-border/50 pt-6">
+        <ParametersSection />
+      </div>
     </div>
   );
 }

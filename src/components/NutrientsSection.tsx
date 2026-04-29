@@ -12,20 +12,11 @@ import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type Nutrient
 
 const empty = { name: "", category: "nutrient" as NutrientCategory, form: "dry" as NutrientType };
 
-export default function NutrientsPage() {
-  const { nutrients, feedSchedules, feedLogs, addNutrient, updateNutrient, deleteNutrient } = useStore();
+export function NutrientsSection() {
+  const { nutrients, addNutrient, updateNutrient, deleteNutrient } = useStore();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [confirmDeleteFromForm, setConfirmDeleteFromForm] = useState(false);
-
-  const isUsed = (nid: string) => feedSchedules.some((s) => s.rows.some((r) => r.nutrient_id === nid)) || feedLogs.some((l) => [...(l.nutrients||[]), ...(l.additives||[]), ...(l.treatments||[])].some((it) => it.nutrient_id === nid));
-  const handleDelete = (nid: string) => { if (isUsed(nid)) setConfirmId(nid); else deleteNutrient(nid); };
-  const handleDeleteFromForm = () => {
-    if (!form.id) return;
-    if (isUsed(form.id)) setConfirmDeleteFromForm(true);
-    else { deleteNutrient(form.id); setOpen(false); }
-  };
 
   const save = () => {
     if (!form.name.trim()) return;
@@ -40,39 +31,40 @@ export default function NutrientsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Nutrients & Additives</h1>
-        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => openForm()}><Plus className="w-4 h-4 mr-1" /> New Item</Button>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Nutrients & Additives</h2>
+        <Button size="sm" variant="outline" onClick={() => openForm()}><Plus className="w-4 h-4 mr-1" /> New Item</Button>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {CATEGORY_ORDER.map((cat) => {
           const items = nutrients.filter((n) => n.category === cat);
           return (
             <div key={cat} className="glass-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-primary">{CATEGORY_LABELS[cat]}</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-primary">{CATEGORY_LABELS[cat]}</h3>
                 <Button variant="ghost" size="sm" onClick={() => openForm(cat)}><Plus className="w-4 h-4 mr-1" /> Add</Button>
               </div>
               <div className="divide-y divide-border/50">
                 {items.map((n) => (
-                  <div key={n.id} className="flex items-center justify-between gap-3 py-2 opacity-100 data-[inactive=true]:opacity-50" data-inactive={!n.active}>
+                  <div key={n.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="min-w-0">
-                      <div className="text-foreground font-medium truncate">{n.name}</div>
-                      <div className="text-xs text-muted-foreground">{n.form} · {formUnit(n.form)}{!n.active ? " · inactive" : ""}</div>
+                      <div className="text-foreground font-medium truncate text-sm">{n.name}</div>
+                      <div className="text-xs text-muted-foreground">{n.form} · {formUnit(n.form)}</div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" className="h-8" onClick={() => openForm(undefined, n)}><Pencil className="w-4 h-4 mr-1" /> Edit</Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(n.id)}><Trash2 className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openForm(undefined, n)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setConfirmId(n.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
                 ))}
-                {items.length === 0 && <p className="text-sm text-muted-foreground">No items yet.</p>}
+                {items.length === 0 && <p className="text-sm text-muted-foreground py-1">No items yet.</p>}
               </div>
             </div>
           );
         })}
       </div>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>{form.id ? "Edit Item" : "New Item"}</DialogTitle></DialogHeader>
@@ -94,37 +86,20 @@ export default function NutrientsPage() {
                 </Select>
               </FormField>
             </div>
-            <FormFooter
-              onSave={save}
-              onCancel={() => setOpen(false)}
-              onDelete={form.id ? handleDeleteFromForm : undefined}
-              saveDisabled={!form.name.trim()}
-              lastUpdated={form.id ? form.updated_at : undefined}
-            />
+            <FormFooter onSave={save} onCancel={() => setOpen(false)} onDelete={form.id ? () => setConfirmId(form.id!) : undefined} saveDisabled={!form.name.trim()} lastUpdated={form.id ? form.updated_at : undefined} />
           </div>
         </DialogContent>
       </Dialog>
+
       <AlertDialog open={!!confirmId} onOpenChange={(o) => !o && setConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete item?</AlertDialogTitle>
-            <AlertDialogDescription>This item is used in feed schedules or logs. Delete anyway? Historical logs will remain intact; it will be removed from schedules.</AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete the item and remove it from all schedules. Historical logs remain intact.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmId) deleteNutrient(confirmId); setConfirmId(null); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog open={confirmDeleteFromForm} onOpenChange={setConfirmDeleteFromForm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete item?</AlertDialogTitle>
-            <AlertDialogDescription>This item is used in feed schedules or logs. Delete anyway? Historical logs will remain intact.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (form.id) deleteNutrient(form.id); setConfirmDeleteFromForm(false); setOpen(false); }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (confirmId) { deleteNutrient(confirmId); setOpen(false); } setConfirmId(null); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

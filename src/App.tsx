@@ -9,9 +9,7 @@ import GrowCyclesPage from "@/pages/GrowCyclesPage";
 import GrowCycleDetailPage from "@/pages/GrowCycleDetailPage";
 import FeedSchedulesPage from "@/pages/FeedSchedulesPage";
 import EnvironmentsPage from "@/pages/EnvironmentsPage";
-import StrainsPage from "@/pages/StrainsPage";
-import NutrientsPage from "@/pages/NutrientsPage";
-import ParametersPage from "@/pages/ParametersPage";
+import TasksEventsPage from "@/pages/TasksEventsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,12 +25,13 @@ const App = () => (
             <Route path="/" element={<DashboardPage />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/feeds" element={<FeedSchedulesPage />} />
-            <Route path="/nutrients" element={<NutrientsPage />} />
-            <Route path="/parameters" element={<ParametersPage />} />
             <Route path="/environments" element={<EnvironmentsPage />} />
             <Route path="/grows" element={<GrowCyclesPage />} />
             <Route path="/grows/:id" element={<GrowCycleDetailPage />} />
-            <Route path="/strains" element={<StrainsPage />} />
+            <Route path="/tasks" element={<TasksEventsPage />} />
+            <Route path="/nutrients" element={<Navigate to="/feeds" replace />} />
+            <Route path="/parameters" element={<Navigate to="/environments" replace />} />
+            <Route path="/strains" element={<Navigate to="/grows" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

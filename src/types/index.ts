@@ -104,6 +104,7 @@ export interface Plant {
   status: PlantStatus;
   created_at: string;
   removed_at: string | null;
+  slot_index: number;
 }
 
 export interface GrowCycle {
