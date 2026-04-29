@@ -2,24 +2,28 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, X, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { FormField } from "@/components/forms/FormField";
+import { FormFooter } from "@/components/forms/FormFooter";
 import { STAGES, type GrowStage, type GrowStatus } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function GrowCycleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, addPlants, removePlant } = useStore();
+  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
 
-  const [addStrainId, setAddStrainId] = useState("");
-  const [addQty, setAddQty] = useState("1");
+  const [slotDialog, setSlotDialog] = useState<number | null>(null);
+  const [pickStrainId, setPickStrainId] = useState("");
+  const [pendingEnvId, setPendingEnvId] = useState<string | null>(null);
+  const [removeForEnv, setRemoveForEnv] = useState<string[]>([]);
 
   const cycle = growCycles.find((c) => c.id === id);
   if (!cycle) return (
@@ -38,19 +42,41 @@ export default function GrowCycleDetailPage() {
   const activePlants = cyclePlants.filter((p) => p.status === "active");
   const removedPlants = cyclePlants.filter((p) => p.status === "removed");
   const daysSinceStart = Math.floor((Date.now() - new Date(cycle.start_date).getTime()) / 86400000);
+  const stageWeek = Math.max(1, Math.floor((Date.now() - new Date(cycle.stage_start_date).getTime()) / (7 * 86400000)) + 1);
 
   const eligibleEnvs = environments.filter((e) => e.supported_stages.includes(cycle.current_stage));
   const currentEnv = environments.find((e) => e.id === cycle.environment_id);
-  const overCapacity = currentEnv ? activePlants.length > currentEnv.site_count : false;
+  const siteCount = currentEnv?.site_count ?? 0;
+  const slots = Array.from({ length: siteCount }, (_, i) => activePlants.find((p) => p.slot_index === i) ?? null);
 
-  const grow_name_short = (cycle.custom_name || cycle.name.split(" - ")[0] || "Grow").replace(/\s+/g, "");
+  const tryEnvChange = (envId: string) => {
+    if (!envId) return;
+    const target = environments.find((e) => e.id === envId);
+    if (!target) return;
+    if (activePlants.length > target.site_count) {
+      setPendingEnvId(envId);
+      setRemoveForEnv([]);
+      return;
+    }
+    moveGrowEnvironment(cycle.id, envId);
+  };
 
-  const doAddPlants = () => {
-    const strain = strains.find((s) => s.id === addStrainId);
-    const qty = parseInt(addQty) || 0;
-    if (!strain || qty <= 0) return;
-    addPlants(cycle.id, strain, qty, grow_name_short);
-    setAddStrainId(""); setAddQty("1");
+  const confirmDownsize = () => {
+    if (!pendingEnvId) return;
+    const target = environments.find((e) => e.id === pendingEnvId);
+    if (!target) return;
+    const needed = activePlants.length - target.site_count;
+    if (removeForEnv.length < needed) return;
+    removeForEnv.forEach((pid) => removePlant(pid));
+    moveGrowEnvironment(cycle.id, pendingEnvId);
+    setPendingEnvId(null); setRemoveForEnv([]);
+  };
+
+  const onAssign = () => {
+    const strain = strains.find((s) => s.id === pickStrainId);
+    if (!strain || slotDialog === null) return;
+    assignPlantToSlot(cycle.id, slotDialog, strain);
+    setSlotDialog(null); setPickStrainId("");
   };
 
   return (
@@ -66,8 +92,10 @@ export default function GrowCycleDetailPage() {
             <p className="text-sm text-muted-foreground mt-1">
               Day {daysSinceStart} · Started {format(new Date(cycle.start_date), "MMMM d, yyyy")} · Est. {cycle.flower_weeks}w flower
             </p>
+            <p className="text-sm text-muted-foreground mt-1 capitalize">Stage: {cycle.current_stage} — Week {stageWeek}</p>
           </div>
           <div className="flex items-center gap-2">
+            <StatusBadge status={cycle.status} />
             <Select value={cycle.status} onValueChange={(v) => updateGrowCycle(cycle.id, { status: v as GrowStatus })}>
               <SelectTrigger className="w-32 bg-muted border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -79,31 +107,25 @@ export default function GrowCycleDetailPage() {
           </div>
         </div>
 
-        {/* Stage controls */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground">Current stage</label>
+          <FormField label="Current stage" helper="Manual transitions only">
             <Select value={cycle.current_stage} onValueChange={(v) => changeStage(cycle.id, v as GrowStage)}>
               <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
               <SelectContent>{STAGES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Environment (filtered by stage)</label>
-            <Select value={cycle.environment_id ?? ""} onValueChange={(v) => moveGrowEnvironment(cycle.id, v)}>
+          </FormField>
+          <FormField label="Environment" helper="Filtered by current stage">
+            <Select value={cycle.environment_id ?? ""} onValueChange={tryEnvChange}>
               <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Select environment"} /></SelectTrigger>
               <SelectContent>{eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name} ({e.site_count} sites)</SelectItem>)}</SelectContent>
             </Select>
-          </div>
+          </FormField>
         </div>
-        {overCapacity && currentEnv && (
-          <p className="text-xs text-warning mt-3">⚠ {activePlants.length} active plants exceed environment capacity ({currentEnv.site_count} sites). Remove plants below.</p>
-        )}
       </div>
 
       <Tabs defaultValue="plants" className="space-y-4">
         <TabsList className="bg-muted border border-border">
-          <TabsTrigger value="plants">Plants ({activePlants.length})</TabsTrigger>
+          <TabsTrigger value="plants">Plants ({activePlants.length}{currentEnv ? `/${siteCount}` : ""})</TabsTrigger>
           <TabsTrigger value="overview">Stages</TabsTrigger>
           <TabsTrigger value="events">Events ({cycleEvents.length})</TabsTrigger>
           <TabsTrigger value="tasks">Tasks ({cycleTasks.length})</TabsTrigger>
@@ -112,49 +134,46 @@ export default function GrowCycleDetailPage() {
         </TabsList>
 
         <TabsContent value="plants" className="space-y-4">
-          <div className="glass-card p-4 space-y-4">
-            <h3 className="font-semibold text-foreground">Add Plants</h3>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
-              <FormField label="Strain" required>
-                <Select value={addStrainId} onValueChange={setAddStrainId}>
-                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select strain" /></SelectTrigger>
-                  <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </FormField>
-              <FormField label="Quantity" htmlFor="plant-qty" required helper="Continues from last index">
-                <Input id="plant-qty" type="number" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} className="bg-muted border-border" />
-              </FormField>
-              <Button onClick={doAddPlants} disabled={!addStrainId} className="gradient-primary text-primary-foreground">
-                <Plus className="w-4 h-4 mr-1" /> Add
-              </Button>
+          {!currentEnv ? (
+            <div className="glass-card p-6 text-center">
+              <p className="text-sm text-muted-foreground">Select an environment above to allocate plant slots.</p>
             </div>
-          </div>
-          <div className="glass-card p-4">
-            <h3 className="font-semibold text-foreground mb-3">Active plants ({activePlants.length})</h3>
-            {activePlants.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active plants.</p>
-            ) : (
-              <div className="space-y-1">
-                {activePlants.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                    <div>
-                      <span className="text-foreground font-medium">{p.plant_tag}</span>
-                      <span className="text-xs text-muted-foreground ml-2">{p.strain_name}</span>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removePlant(p.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          ) : (
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground">Plant Slots</h3>
+                <p className="text-xs text-muted-foreground">{activePlants.length} of {siteCount} sites assigned</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                {slots.map((p, i) => (
+                  <div key={i} className={cn("rounded-lg border p-3 flex flex-col gap-1.5 min-h-[88px]", p ? "bg-muted border-border" : "bg-muted/30 border-dashed border-border")}>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Site {i + 1}</div>
+                    {p ? (
+                      <>
+                        <div className="text-sm text-foreground font-medium truncate">{p.strain_name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{p.plant_tag}</div>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-destructive justify-start px-1 -mx-1" onClick={() => removePlant(p.id)}>
+                          <X className="w-3 h-3 mr-1" /> Remove
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs justify-start px-1 -mx-1 text-primary" onClick={() => { setSlotDialog(i); setPickStrainId(""); }}>
+                        <Plus className="w-3 h-3 mr-1" /> Assign
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           {removedPlants.length > 0 && (
             <div className="glass-card p-4">
-              <h3 className="font-semibold text-foreground mb-3">Removed ({removedPlants.length})</h3>
+              <h3 className="font-semibold text-foreground mb-2 text-sm">Removed ({removedPlants.length})</h3>
               <div className="space-y-1 opacity-60">
                 {removedPlants.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-muted/30 text-sm line-through">
+                  <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-lg bg-muted/30 text-xs line-through">
                     <span>{p.plant_tag}</span>
-                    <span className="text-xs text-muted-foreground">{p.removed_at && format(new Date(p.removed_at), "MMM d")}</span>
+                    <span className="text-muted-foreground">{p.removed_at && format(new Date(p.removed_at), "MMM d")}</span>
                   </div>
                 ))}
               </div>
@@ -239,7 +258,7 @@ export default function GrowCycleDetailPage() {
                 {cycleFeedLogs.map((f) => (
                   <div key={f.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
                     <div className="flex justify-between">
-                      <span className="font-medium text-foreground">{f.water_volume}L water</span>
+                      <span className="font-medium text-foreground">{f.water_volume || f.liters}L water</span>
                       <span className="text-xs text-muted-foreground">{format(new Date(f.date), "MMM d")}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
@@ -254,10 +273,55 @@ export default function GrowCycleDetailPage() {
 
         <TabsContent value="params">
           <div className="glass-card p-4">
-            <p className="text-sm text-muted-foreground">Log parameters from the Logs page.</p>
+            <p className="text-sm text-muted-foreground">Parameter logging UI coming soon.</p>
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Assign slot dialog */}
+      <Dialog open={slotDialog !== null} onOpenChange={(o) => !o && setSlotDialog(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader><DialogTitle>Assign Plant — Site {slotDialog !== null ? slotDialog + 1 : ""}</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <FormField label="Strain" required>
+              <Select value={pickStrainId} onValueChange={setPickStrainId}>
+                <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select strain" /></SelectTrigger>
+                <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </FormField>
+            <FormFooter onSave={onAssign} onCancel={() => setSlotDialog(null)} saveLabel="Assign" saveDisabled={!pickStrainId} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Downsize plant removal dialog */}
+      <AlertDialog open={!!pendingEnvId} onOpenChange={(o) => !o && setPendingEnvId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reduce plants to fit new environment</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Remove {Math.max(0, activePlants.length - (environments.find((e) => e.id === pendingEnvId)?.site_count ?? 0))} plants to match environment capacity.</p>
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {activePlants.map((p) => {
+                    const checked = removeForEnv.includes(p.id);
+                    return (
+                      <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={checked} onChange={() => setRemoveForEnv((r) => r.includes(p.id) ? r.filter((x) => x !== p.id) : [...r, p.id])} />
+                        <span>{p.plant_tag} <span className="text-muted-foreground">({p.strain_name})</span></span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDownsize} disabled={removeForEnv.length < (activePlants.length - (environments.find((e) => e.id === pendingEnvId)?.site_count ?? 0))}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
