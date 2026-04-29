@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil } from "lucide-react";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
+import { NutrientsSection } from "@/components/NutrientsSection";
 import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type GrowStage, type Nutrient, type NutrientCategory, type NutrientType } from "@/types";
 
 const emptyMeta = { name: "", notes: "" };
@@ -225,6 +226,10 @@ export default function FeedSchedulesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <div className="border-t border-border/50 pt-6">
+        <NutrientsSection />
+      </div>
     </div>
   );
 }
