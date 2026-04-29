@@ -36,11 +36,10 @@ export default function TasksEventsPage() {
     return all
       .filter((it) => {
         if (status === "all") return true;
-        if (it.kind === "event") return status === "upcoming" || status === "all";
+        if (it.kind === "event") return status === "upcoming";
         if (status === "completed") return it.completed;
         if (status === "upcoming") return !it.completed && (!it.date || !isBefore(new Date(it.date), today));
-        if (status === "overdue") return !it.completed && it.date && isBefore(new Date(it.date), today);
-        return true;
+        return !it.completed && !!it.date && isBefore(new Date(it.date), today);
       })
       .sort((a, b) => {
         if (!a.date) return 1; if (!b.date) return -1;
