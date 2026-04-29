@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ChevronRight, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, ChevronRight } from "lucide-react";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
+import { StrainsSection } from "@/components/StrainsSection";
 import { STAGES, type FeedMode, type GrowCycle, type GrowStage } from "@/types";
 import { Link } from "react-router-dom";
 
@@ -155,6 +156,10 @@ export default function GrowCyclesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <div className="border-t border-border/50 pt-6">
+        <StrainsSection />
+      </div>
     </div>
   );
 }
