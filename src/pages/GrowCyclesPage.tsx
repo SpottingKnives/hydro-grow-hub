@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Library } from "lucide-react";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { StrainsSection } from "@/components/StrainsSection";
@@ -20,6 +20,7 @@ export default function GrowCyclesPage() {
   const { growCycles, environments, feedSchedules, plants, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [form, setForm] = useState({
     custom: "Grow",
     starting_stage: "veg" as GrowStage,
@@ -55,7 +56,12 @@ export default function GrowCyclesPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Grow Cycles</h1>
-        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-1" /> New Grow</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setLibraryOpen(true)}>
+            <Library className="w-4 h-4 mr-1" /> Manage Strains
+          </Button>
+          <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-1" /> New Grow</Button>
+        </div>
       </div>
       {growCycles.length === 0 ? (
         <div className="glass-card p-12 text-center"><p className="text-muted-foreground">No grow cycles yet.</p></div>
@@ -157,9 +163,12 @@ export default function GrowCyclesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="border-t border-border/50 pt-6">
-        <StrainsSection />
-      </div>
+      <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
+        <DialogContent className="bg-card border-border max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Strains Library</DialogTitle></DialogHeader>
+          <div className="mt-2"><StrainsSection /></div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
