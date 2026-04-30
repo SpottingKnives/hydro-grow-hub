@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil } from "lucide-react";
+import { Library } from "lucide-react";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { NutrientsSection } from "@/components/NutrientsSection";
@@ -22,6 +23,7 @@ export default function FeedSchedulesPage() {
   const [metaForm, setMetaForm] = useState<typeof emptyMeta & { id?: string; updated_at?: string }>(emptyMeta);
   const [confirmDeleteSchedule, setConfirmDeleteSchedule] = useState(false);
   const [confirmDeleteRowId, setConfirmDeleteRowId] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   // Inline tabular editing
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -86,9 +88,14 @@ export default function FeedSchedulesPage() {
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-foreground">Feed Schedules</h1>
-        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => openMeta()}>
-          <Plus className="w-4 h-4 mr-1" /> New Schedule
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setLibraryOpen(true)}>
+            <Library className="w-4 h-4 mr-1" /> Manage Nutrients & Additives
+          </Button>
+          <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => openMeta()}>
+            <Plus className="w-4 h-4 mr-1" /> New Schedule
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -241,9 +248,12 @@ export default function FeedSchedulesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="border-t border-border/50 pt-6">
-        <NutrientsSection />
-      </div>
+      <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
+        <DialogContent className="bg-card border-border max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Nutrients & Additives Library</DialogTitle></DialogHeader>
+          <div className="mt-2"><NutrientsSection /></div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

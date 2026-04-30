@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Library } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
@@ -28,6 +28,7 @@ export default function EnvironmentsPage() {
   const [newParam, setNewParam] = useState({ name: "", unit: "" });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const openForm = (env?: Environment) => {
     setForm(env ? {
@@ -229,9 +230,12 @@ export default function EnvironmentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="border-t border-border/50 pt-6">
-        <ParametersSection />
-      </div>
+      <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Parameters Library</DialogTitle></DialogHeader>
+          <div className="mt-2"><ParametersSection /></div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
