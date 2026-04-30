@@ -88,9 +88,14 @@ export default function EnvironmentsPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Environments</h1>
-        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => openForm()}>
-          <Plus className="w-4 h-4 mr-1" /> New Environment
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setLibraryOpen(true)}>
+            <Library className="w-4 h-4 mr-1" /> Manage Parameters
+          </Button>
+          <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => openForm()}>
+            <Plus className="w-4 h-4 mr-1" /> New Environment
+          </Button>
+        </div>
       </div>
 
       {environments.length === 0 ? (
