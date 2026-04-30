@@ -148,7 +148,7 @@ export default function GrowCyclesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete grow cycle?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the grow cycle and all linked plants, tasks, events, and timeline entries. This cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>This will remove the grow cycle and all linked plants, tasks, events, and timeline entries. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

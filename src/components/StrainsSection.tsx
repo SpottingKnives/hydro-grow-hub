@@ -114,7 +114,7 @@ export function StrainsSection() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete strain?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the strain. Existing plants linked to it will keep their snapshot data.</AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete the strain. Existing plants linked to it will keep their snapshot data. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

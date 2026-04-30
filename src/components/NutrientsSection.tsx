@@ -95,7 +95,7 @@ export function NutrientsSection() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete item?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the item and remove it from all schedules. Historical logs remain intact.</AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete the item and remove it from all schedules. Historical logs remain intact. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
