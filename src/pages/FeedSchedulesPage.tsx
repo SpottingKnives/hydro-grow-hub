@@ -21,6 +21,7 @@ export default function FeedSchedulesPage() {
   const [metaOpen, setMetaOpen] = useState(false);
   const [metaForm, setMetaForm] = useState<typeof emptyMeta & { id?: string; updated_at?: string }>(emptyMeta);
   const [confirmDeleteSchedule, setConfirmDeleteSchedule] = useState(false);
+  const [confirmDeleteRowId, setConfirmDeleteRowId] = useState<string | null>(null);
 
   // Inline tabular editing
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export default function FeedSchedulesPage() {
                 <Button variant="ghost" size="sm" onClick={() => setEditingId(editingId === schedule.id ? null : schedule.id)}>
                   {editingId === schedule.id ? "Done" : "Edit Rows"}
                 </Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => deleteFeedSchedule(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteRowId(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
               </div>
             </div>
 
@@ -218,11 +219,24 @@ export default function FeedSchedulesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>This removes the schedule. Historical feed logs that referenced it will remain intact.</AlertDialogDescription>
+            <AlertDialogDescription>This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (metaForm.id) deleteFeedSchedule(metaForm.id); setConfirmDeleteSchedule(false); setMetaOpen(false); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDeleteRowId} onOpenChange={(o) => !o && setConfirmDeleteRowId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
+            <AlertDialogDescription>This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmDeleteRowId) deleteFeedSchedule(confirmDeleteRowId); setConfirmDeleteRowId(null); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
