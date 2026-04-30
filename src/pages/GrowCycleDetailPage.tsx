@@ -24,6 +24,8 @@ export default function GrowCycleDetailPage() {
   const [pickStrainId, setPickStrainId] = useState("");
   const [pendingEnvId, setPendingEnvId] = useState<string | null>(null);
   const [removeForEnv, setRemoveForEnv] = useState<string[]>([]);
+  const [pendingStage, setPendingStage] = useState<GrowStage | null>(null);
+  const [confirmEnvId, setConfirmEnvId] = useState<string | null>(null);
 
   const cycle = growCycles.find((c) => c.id === id);
   if (!cycle) return (
@@ -56,6 +58,10 @@ export default function GrowCycleDetailPage() {
     if (activePlants.length > target.site_count) {
       setPendingEnvId(envId);
       setRemoveForEnv([]);
+      return;
+    }
+    if (cycle.status === "active") {
+      setConfirmEnvId(envId);
       return;
     }
     moveGrowEnvironment(cycle.id, envId);
@@ -109,7 +115,11 @@ export default function GrowCycleDetailPage() {
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField label="Current stage" helper="Manual transitions only">
-            <Select value={cycle.current_stage} onValueChange={(v) => changeStage(cycle.id, v as GrowStage)}>
+            <Select value={cycle.current_stage} onValueChange={(v) => {
+              if (v === cycle.current_stage) return;
+              if (cycle.status === "active") setPendingStage(v as GrowStage);
+              else changeStage(cycle.id, v as GrowStage);
+            }}>
               <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
               <SelectContent>{STAGES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
             </Select>
@@ -319,6 +329,38 @@ export default function GrowCycleDetailPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDownsize} disabled={removeForEnv.length < (activePlants.length - (environments.find((e) => e.id === pendingEnvId)?.site_count ?? 0))}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm stage change on active grow */}
+      <AlertDialog open={!!pendingStage} onOpenChange={(o) => !o && setPendingStage(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change stage?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This grow is active. Moving from <span className="capitalize text-foreground">{cycle.current_stage}</span> to <span className="capitalize text-foreground">{pendingStage}</span> will close the current stage and start a new one. Logs and history will reflect the change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (pendingStage) changeStage(cycle.id, pendingStage); setPendingStage(null); }}>Change stage</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm environment change on active grow */}
+      <AlertDialog open={!!confirmEnvId} onOpenChange={(o) => !o && setConfirmEnvId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move environment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This grow is active. Moving to <span className="text-foreground">{environments.find((e) => e.id === confirmEnvId)?.name}</span> will close the current environment timeline entry and start a new one.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmEnvId) moveGrowEnvironment(cycle.id, confirmEnvId); setConfirmEnvId(null); }}>Move</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

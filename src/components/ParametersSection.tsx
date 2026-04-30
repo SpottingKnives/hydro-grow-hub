@@ -72,7 +72,7 @@ export function ParametersSection() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete parameter?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the parameter and remove it from all environments. Historical logs remain intact.</AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete the parameter and remove it from all environments. Historical logs remain intact. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

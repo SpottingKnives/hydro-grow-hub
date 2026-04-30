@@ -27,6 +27,7 @@ export default function EnvironmentsPage() {
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [newParam, setNewParam] = useState({ name: "", unit: "" });
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const openForm = (env?: Environment) => {
     setForm(env ? {
@@ -101,7 +102,7 @@ export default function EnvironmentsPage() {
                 <h3 className="font-semibold text-foreground">{env.name}</h3>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" onClick={() => openForm(env)}><Pencil className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => deleteEnvironment(env.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteId(env.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">{env.site_count} sites · {env.system_description || "No system description"}</p>
@@ -206,11 +207,24 @@ export default function EnvironmentsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete environment?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the environment. Historical timeline entries on grows will remain intact.</AlertDialogDescription>
+            <AlertDialogDescription>This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (form.id) deleteEnvironment(form.id); setConfirmDelete(false); setOpen(false); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete environment?</AlertDialogTitle>
+            <AlertDialogDescription>This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmDeleteId) deleteEnvironment(confirmDeleteId); setConfirmDeleteId(null); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
