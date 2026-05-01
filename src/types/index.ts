@@ -7,6 +7,7 @@ export type FeedMode = 'fixed' | 'guided';
 export type TaskTriggerType = 'on_enter' | 'after_days' | 'on_stage';
 export type TaskStatus = 'open' | 'completed';
 export type Priority = 'low' | 'medium' | 'high';
+export type TaskRepeat = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
 
 export interface Nutrient {
   id: string;
@@ -154,6 +155,8 @@ export interface GrowTask {
   generated_from_environment: boolean;
   priority?: 'low' | 'medium' | 'high';
   reminder_time?: string | null;
+  repeat?: TaskRepeat;
+  repeat_parent_id?: string | null;
 }
 
 export interface GrowEvent {

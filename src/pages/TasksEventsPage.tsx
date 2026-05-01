@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, ListChecks, Calendar as CalIcon } from "lucide-react";
 import { format, isAfter, isBefore, startOfDay } from "date-fns";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
-import type { GrowTask, Priority, GrowStage } from "@/types";
+import type { GrowTask, Priority, GrowStage, TaskRepeat } from "@/types";
 import { cn } from "@/lib/utils";
 
 type Filter = "both" | "tasks" | "events";
@@ -21,7 +22,8 @@ export default function TasksEventsPage() {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("both");
   const [status, setStatus] = useState<Status>("all");
-  const [form, setForm] = useState({ title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" as Priority });
+  const [form, setForm] = useState({ title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" as Priority, repeat: "none" as TaskRepeat });
+  const [confirmDel, setConfirmDel] = useState<{ kind: "task" | "event"; id: string } | null>(null);
 
   const today = startOfDay(new Date());
 
@@ -54,17 +56,18 @@ export default function TasksEventsPage() {
       name: form.title, title: form.title, description: form.description,
       due_date: form.due_date || null, stage_trigger: null, status: "open",
       priority: form.priority, completed: false, generated_from_environment: false, reminder_time: null,
+      repeat: form.repeat, repeat_parent_id: null,
     };
     addTask(task);
-    setForm({ title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" });
+    setForm({ title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium", repeat: "none" });
     setOpen(false);
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 max-w-5xl">
+      <div className="space-y-3">
         <h1 className="text-2xl font-bold text-foreground">Tasks & Events</h1>
-        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setOpen(true)}>
+        <Button size="sm" className="gradient-primary text-primary-foreground w-full sm:w-auto" onClick={() => setOpen(true)}>
           <Plus className="w-4 h-4 mr-1" /> New Task
         </Button>
       </div>
@@ -102,7 +105,7 @@ export default function TasksEventsPage() {
                     {overdue && <span className="text-destructive">· overdue</span>}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => it.kind === "task" ? deleteTask(it.id) : deleteEvent(it.id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel({ kind: it.kind, id: it.id })}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -112,7 +115,7 @@ export default function TasksEventsPage() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-card border-border max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Task</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <FormField label="Title" htmlFor="t-title" required>
@@ -121,7 +124,7 @@ export default function TasksEventsPage() {
             <FormField label="Description" htmlFor="t-desc" helper="Optional context for the task">
               <Textarea id="t-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="bg-muted border-border" />
             </FormField>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Due Date" htmlFor="t-due">
                 <Input id="t-due" type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="bg-muted border-border" />
               </FormField>
@@ -136,6 +139,18 @@ export default function TasksEventsPage() {
                 </Select>
               </FormField>
             </div>
+            <FormField label="Repeat" helper="Auto-creates the next occurrence when this task is completed">
+              <Select value={form.repeat} onValueChange={(v) => setForm({ ...form, repeat: v as TaskRepeat })}>
+                <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="biweekly">Every 2 weeks</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
             <FormField label="Grow Cycle" helper="Optional. Link this task to a specific grow.">
               <Select value={form.grow_cycle_id} onValueChange={(v) => setForm({ ...form, grow_cycle_id: v })}>
                 <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Unlinked" /></SelectTrigger>
@@ -148,6 +163,19 @@ export default function TasksEventsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this log entry?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmDel) { confirmDel.kind === "task" ? deleteTask(confirmDel.id) : deleteEvent(confirmDel.id); } setConfirmDel(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

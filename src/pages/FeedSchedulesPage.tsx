@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil } from "lucide-react";
-import { Library } from "lucide-react";
+import { LibraryRow } from "@/components/LibraryRow";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { NutrientsSection } from "@/components/NutrientsSection";
@@ -85,21 +85,19 @@ export default function FeedSchedulesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-4 max-w-6xl">
+      <div className="space-y-3">
         <h1 className="text-2xl font-bold text-foreground">Feed Schedules</h1>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setLibraryOpen(true)}>
-            <Library className="w-4 h-4 mr-1" /> Manage Nutrients & Additives
-          </Button>
-          <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => openMeta()}>
-            <Plus className="w-4 h-4 mr-1" /> New Schedule
-          </Button>
-        </div>
+        <Button size="sm" className="gradient-primary text-primary-foreground w-full sm:w-auto" onClick={() => openMeta()}>
+          <Plus className="w-4 h-4 mr-1" /> New Schedule
+        </Button>
+        <LibraryRow label="Nutrients & Additives" onManage={() => setLibraryOpen(true)} />
       </div>
 
       <div className="space-y-6">
-        {[...feedSchedules].sort((a, b) => b.created_at.localeCompare(a.created_at)).map((schedule) => (
+        {[...feedSchedules].sort((a, b) => b.created_at.localeCompare(a.created_at)).map((schedule) => {
+          const hasEmpty = editingId === schedule.id && schedule.rows.some((r) => FEED_STAGES.some((st) => !r.amounts[st] || r.amounts[st] <= 0));
+          return (
           <div key={schedule.id} className="glass-card p-4 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -108,7 +106,7 @@ export default function FeedSchedulesPage() {
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" onClick={() => openMeta(schedule)} title="Edit name & notes"><Pencil className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => setEditingId(editingId === schedule.id ? null : schedule.id)}>
+                <Button variant="ghost" size="sm" onClick={() => { if (editingId === schedule.id && hasEmpty) return; setEditingId(editingId === schedule.id ? null : schedule.id); }} disabled={editingId === schedule.id && hasEmpty} title={hasEmpty ? "Fill all cells before closing" : ""}>
                   {editingId === schedule.id ? "Done" : "Edit Rows"}
                 </Button>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteRowId(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -117,8 +115,10 @@ export default function FeedSchedulesPage() {
 
             <div className="overflow-x-auto"><table className="w-full text-sm min-w-[720px]"><thead><tr className="border-b border-border"><th className="text-left py-2 px-2 text-muted-foreground font-medium">Item</th><th className="text-center py-2 px-2 text-muted-foreground font-medium text-xs">Unit</th>{FEED_STAGES.map((stage) => <th key={stage} className="text-center py-2 px-2 text-muted-foreground font-medium capitalize text-xs"><div>{stage}</div>{schedule.ec_targets?.[stage] && <div className="text-[10px] font-normal text-primary/80 normal-case mt-0.5">EC {schedule.ec_targets[stage]!.min}–{schedule.ec_targets[stage]!.max}</div>}</th>)}{editingId === schedule.id && <th className="w-24" />}</tr></thead><tbody>
               {editingId === schedule.id && <tr className="border-b border-border/50 bg-muted/20"><td className="py-2 px-2 text-xs font-semibold uppercase tracking-wide text-primary" colSpan={2}>EC Target</td>{FEED_STAGES.map((stage) => { const t = schedule.ec_targets?.[stage] ?? { min: 0, max: 0 }; return <td key={stage} className="py-2 px-1"><div className="flex items-center justify-center gap-1"><Input type="number" min={0} step={0.1} value={t.min} onChange={(e) => updateEcTarget(schedule.id, stage, 'min', parseFloat(e.target.value) || 0)} className="w-12 h-7 text-center bg-muted border-border text-xs px-1" /><span className="text-muted-foreground text-xs">–</span><Input type="number" min={0} step={0.1} value={t.max} onChange={(e) => updateEcTarget(schedule.id, stage, 'max', parseFloat(e.target.value) || 0)} className="w-12 h-7 text-center bg-muted border-border text-xs px-1" /></div></td>; })}<td /></tr>}
-              {CATEGORY_ORDER.map((cat) => { const rows = schedule.rows.filter((r) => r.category === cat).sort((a, b) => a.order_index - b.order_index); return <>{<tr key={`hdr-${cat}-${schedule.id}`} className="bg-muted/30"><td colSpan={2 + FEED_STAGES.length + (editingId === schedule.id ? 1 : 0)} className="py-1.5 px-2 text-xs font-semibold uppercase tracking-wide text-primary">{CATEGORY_LABELS[cat]}</td></tr>}{rows.map((row, idx) => <tr key={row.id} className="border-b border-border/50"><td className="py-2 px-2 text-foreground font-medium">{row.nutrient_name}</td><td className="py-2 px-2 text-center"><span className="text-xs text-muted-foreground">{formUnit(row.nutrient_type)}</span></td>{FEED_STAGES.map((stage) => <td key={stage} className="py-2 px-2 text-center">{editingId === schedule.id ? <Input type="number" min={0} step={0.01} value={row.amounts[stage] ?? 0} onChange={(e) => updateAmount(schedule.id, row.id, stage, parseFloat(e.target.value) || 0)} className="w-16 h-8 text-center bg-muted border-border text-xs mx-auto" /> : <span className="text-foreground">{row.amounts[stage] || "–"}</span>}</td>)}{editingId === schedule.id && <td className="py-2 px-2"><div className="flex items-center gap-0.5 justify-end"><Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" disabled={idx === 0} onClick={() => reorderFeedScheduleRow(schedule.id, row.id, 'up')}><ArrowUp className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" disabled={idx === rows.length - 1} onClick={() => reorderFeedScheduleRow(schedule.id, row.id, 'down')}><ArrowDown className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeRow(schedule.id, row.id)}><Trash2 className="w-3 h-3" /></Button></div></td>}</tr>)}</>; })}
+              {CATEGORY_ORDER.map((cat) => { const rows = schedule.rows.filter((r) => r.category === cat).sort((a, b) => a.order_index - b.order_index); return <>{<tr key={`hdr-${cat}-${schedule.id}`} className="bg-muted/30"><td colSpan={2 + FEED_STAGES.length + (editingId === schedule.id ? 1 : 0)} className="py-1.5 px-2 text-xs font-semibold uppercase tracking-wide text-primary">{CATEGORY_LABELS[cat]}</td></tr>}{rows.map((row, idx) => <tr key={row.id} className="border-b border-border/50"><td className="py-2 px-2 text-foreground font-medium">{row.nutrient_name}</td><td className="py-2 px-2 text-center"><span className="text-xs text-muted-foreground">{formUnit(row.nutrient_type)}</span></td>{FEED_STAGES.map((stage) => { const empty = !row.amounts[stage] || row.amounts[stage] <= 0; return <td key={stage} className="py-2 px-2 text-center">{editingId === schedule.id ? <Input type="number" min={0} step={0.01} value={row.amounts[stage] ?? 0} onChange={(e) => updateAmount(schedule.id, row.id, stage, parseFloat(e.target.value) || 0)} className={`w-16 h-8 text-center bg-muted border text-xs mx-auto ${empty ? 'border-destructive/60 ring-1 ring-destructive/40' : 'border-border'}`} /> : <span className="text-foreground">{row.amounts[stage] || "–"}</span>}</td>; })}{editingId === schedule.id && <td className="py-2 px-2"><div className="flex items-center gap-0.5 justify-end"><Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" disabled={idx === 0} onClick={() => reorderFeedScheduleRow(schedule.id, row.id, 'up')}><ArrowUp className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" disabled={idx === rows.length - 1} onClick={() => reorderFeedScheduleRow(schedule.id, row.id, 'down')}><ArrowDown className="w-3 h-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeRow(schedule.id, row.id)}><Trash2 className="w-3 h-3" /></Button></div></td>}</tr>)}</>; })}
             </tbody></table></div>
+
+            {hasEmpty && <p className="text-xs text-destructive">All cells must have a value before this schedule is complete.</p>}
 
             {editingId === schedule.id && (
               <div className="flex flex-wrap gap-2">
@@ -141,7 +141,8 @@ export default function FeedSchedulesPage() {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Schedule meta dialog */}
@@ -249,7 +250,7 @@ export default function FeedSchedulesPage() {
       </AlertDialog>
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
-        <DialogContent className="bg-card border-border max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-3xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nutrients & Additives Library</DialogTitle></DialogHeader>
           <div className="mt-2"><NutrientsSection /></div>
         </DialogContent>
