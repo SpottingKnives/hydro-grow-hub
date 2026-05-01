@@ -19,7 +19,7 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 const ADD_NEW_STRAIN = "__add_new_strain__";
 
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, addStrain, deleteGrowCycle, moveGrowEnvironment, assignPlantToSlot } = useStore();
+  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, addStrain, deleteGrowCycle, moveGrowEnvironment } = useStore();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
