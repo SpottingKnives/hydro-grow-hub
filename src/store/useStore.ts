@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import type {
   AlertRule, Environment, FeedLog, FeedSchedule, FeedScheduleRow,
   GrowCycle, GrowEnvironmentTimeline, GrowEvent, GrowStage, GrowStrain, GrowTask, Nutrient, Plant,
-  Parameter, ParameterLog, StageHistory, Strain, EventType
+  Parameter, ParameterLog, StageHistory, Strain, EventType, TaskStatus
 } from '@/types';
 import { FEED_STAGES } from '@/types';
 
