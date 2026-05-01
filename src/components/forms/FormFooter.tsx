@@ -18,15 +18,14 @@ export function FormFooter({ onSave, onCancel, onDelete, saveLabel = "Save", sav
           Last updated {format(new Date(lastUpdated), "MMM d, yyyy")}
         </p>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
         {onDelete && (
-          <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onDelete}>
+          <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 sm:mr-auto" onClick={onDelete}>
             Delete
           </Button>
         )}
-        <div className="flex-1" />
-        <Button variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button onClick={onSave} disabled={saveDisabled} className="gradient-primary text-primary-foreground">
+        <Button variant="outline" onClick={onCancel} className="sm:ml-auto w-full sm:w-auto">Cancel</Button>
+        <Button onClick={onSave} disabled={saveDisabled} className="gradient-primary text-primary-foreground w-full sm:w-auto">
           {saveLabel}
         </Button>
       </div>
