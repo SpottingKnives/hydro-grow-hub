@@ -42,8 +42,8 @@ interface AppState {
   growCycles: GrowCycle[]; stageHistory: StageHistory[]; environments: Environment[]; feedSchedules: FeedSchedule[];
   nutrients: Nutrient[]; tasks: GrowTask[]; events: GrowEvent[]; parameterLogs: ParameterLog[]; alertRules: AlertRule[];
   feedLogs: FeedLog[]; strains: Strain[]; growStrains: GrowStrain[]; plants: Plant[]; environmentTimeline: GrowEnvironmentTimeline[]; parameters: Parameter[];
-  addGrowCycle: (cycle: GrowCycle, plants?: Plant[]) => void; updateGrowCycle: (id: string, updates: Partial<GrowCycle>) => void; deleteGrowCycle: (id: string) => void; changeStage: (cycleId: string, newStage: GrowStage) => void; moveGrowEnvironment: (cycleId: string, environmentId: string, startDate?: string) => void;
-  assignPlantToSlot: (cycleId: string, slot_index: number, strain: Strain) => void; removePlant: (plantId: string) => void;
+  addGrowCycle: (cycle: GrowCycle, plants?: Plant[]) => void; updateGrowCycle: (id: string, updates: Partial<GrowCycle>) => void; deleteGrowCycle: (id: string) => void; changeStage: (cycleId: string, newStage: GrowStage) => void; moveGrowEnvironment: (cycleId: string, environmentId: string, startDate?: string, silent?: boolean) => void;
+  assignPlantToSlot: (cycleId: string, slot_index: number, strain: Strain, silent?: boolean) => void; removePlant: (plantId: string) => void;
   addEnvironment: (env: Environment) => void; updateEnvironment: (id: string, updates: Partial<Environment>) => void; deleteEnvironment: (id: string) => void;
   addParameter: (parameter: Parameter) => void; updateParameter: (id: string, updates: Partial<Parameter>) => void; deleteParameter: (id: string) => void;
   addFeedSchedule: (schedule: FeedSchedule) => void; updateFeedSchedule: (id: string, updates: Partial<FeedSchedule>) => void; deleteFeedSchedule: (id: string) => void; reorderFeedScheduleRow: (scheduleId: string, rowId: string, direction: 'up' | 'down') => void; addScheduleRow: (scheduleId: string, nutrient: Nutrient) => void;
@@ -62,7 +62,8 @@ export const useStore = create<AppState>()(persist((set, get) => ({
     growCycles: [...s.growCycles, cycle],
     plants: [...s.plants, ...plants],
     stageHistory: [...s.stageHistory, { id: id(), grow_cycle_id: cycle.id, stage: cycle.current_stage, started_at: cycle.start_date, ended_at: null }],
-    events: [...s.events, mkEvent(cycle.id, 'note', `Grow created: ${cycle.name}`, `Started in stage ${cycle.current_stage}`)],
+    // Single creation event — setup steps (plants, env) are not logged separately
+    events: [...s.events, mkEvent(cycle.id, 'note', `Grow created: ${cycle.name}`, `Started in stage ${cycle.current_stage}${plants.length ? ` with ${plants.length} plant${plants.length === 1 ? '' : 's'}` : ''}`)],
   })),
   updateGrowCycle: (gid, updates) => set((s) => {
     const prev = s.growCycles.find((c) => c.id === gid);
@@ -85,16 +86,16 @@ export const useStore = create<AppState>()(persist((set, get) => ({
       events: [...s.events, ...events],
     };
   }),
-  moveGrowEnvironment: (cycleId, environmentId, startDate = today()) => set((s) => {
+  moveGrowEnvironment: (cycleId, environmentId, startDate = today(), silent = false) => set((s) => {
     const env = s.environments.find((e) => e.id === environmentId); if (!env) return s;
     return {
       growCycles: s.growCycles.map((c) => c.id === cycleId ? { ...c, environment_id: environmentId } : c),
       environmentTimeline: [...s.environmentTimeline.map((t) => t.grow_cycle_id === cycleId && !t.end_date ? { ...t, end_date: startDate } : t), { id: id(), grow_cycle_id: cycleId, environment_id: env.id, environment_name: env.name, start_date: startDate, end_date: null, snapshot: { name: env.name, supported_stages: env.supported_stages, site_count: env.site_count, system_description: env.system_description, parameter_ids: env.parameter_ids } }],
-      events: [...s.events, mkEvent(cycleId, 'environment_change', `Moved to ${env.name}`)],
+      events: silent ? s.events : [...s.events, mkEvent(cycleId, 'environment_change', `Moved to ${env.name}`)],
     };
   }),
 
-  assignPlantToSlot: (cycleId, slot_index, strain) => set((s) => {
+  assignPlantToSlot: (cycleId, slot_index, strain, silent = false) => set((s) => {
     // Remove any existing active plant in this slot
     const cleared = s.plants.map((p) => p.grow_cycle_id === cycleId && p.slot_index === slot_index && p.status === 'active' ? { ...p, status: 'removed' as const, removed_at: now() } : p);
     const cycle = s.growCycles.find((c) => c.id === cycleId);
@@ -104,7 +105,7 @@ export const useStore = create<AppState>()(persist((set, get) => ({
       id: id(), grow_cycle_id: cycleId, strain_id: strain.id, strain_name: strain.name,
       plant_tag: tag, status: 'active', created_at: now(), removed_at: null, slot_index,
     };
-    return { plants: [...cleared, plant], events: [...s.events, mkEvent(cycleId, 'note', `Plant assigned: ${tag}`)] };
+    return { plants: [...cleared, plant], events: silent ? s.events : [...s.events, mkEvent(cycleId, 'note', `Plant assigned: ${tag}`)] };
   }),
   removePlant: (plantId) => set((s) => {
     const p = s.plants.find((x) => x.id === plantId);
@@ -135,11 +136,26 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   updateTask: (tid, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === tid ? { ...t, ...updates, completed: updates.status ? updates.status === 'completed' : updates.completed ?? t.completed } : t) })),
   deleteTask: (tid) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== tid) })),
   toggleTask: (tid) => set((s) => {
-    const t = s.tasks.find((x) => x.id === tid); const willComplete = t && !t.completed;
-    return {
-      tasks: s.tasks.map((x) => x.id === tid ? { ...x, completed: !x.completed, status: !x.completed ? 'completed' : 'open' } : x),
-      events: willComplete ? [...s.events, mkEvent(t.grow_cycle_id, 'note', `Task completed: ${t.title}`)] : s.events,
-    };
+    const t = s.tasks.find((x) => x.id === tid); const willComplete = !!(t && !t.completed);
+    let newTasks = s.tasks.map((x) => x.id === tid ? { ...x, completed: !x.completed, status: (!x.completed ? 'completed' : 'open') as TaskStatus } : x);
+    const extraEvents: GrowEvent[] = [];
+    // Generate next occurrence on completion if repeat is set
+    if (willComplete && t && t.repeat && t.repeat !== 'none' && t.due_date) {
+      const offsets: Record<string, number> = { daily: 1, weekly: 7, biweekly: 14, monthly: 30 };
+      const days = offsets[t.repeat] ?? 0;
+      if (days > 0) {
+        const nextDate = new Date(t.due_date); nextDate.setDate(nextDate.getDate() + days);
+        const next: GrowTask = {
+          ...t, id: id(),
+          due_date: nextDate.toISOString().slice(0, 10),
+          status: 'open', completed: false,
+          repeat_parent_id: t.repeat_parent_id || t.id,
+        };
+        newTasks = [...newTasks, next];
+      }
+    }
+    if (willComplete && t) extraEvents.push(mkEvent(t.grow_cycle_id, 'note', `Task completed: ${t.title}`));
+    return { tasks: newTasks, events: [...s.events, ...extraEvents] };
   }),
   addEvent: (event) => set((s) => ({ events: [...s.events, event] })), deleteEvent: (eid) => set((s) => ({ events: s.events.filter((e) => e.id !== eid) })),
   addParameterLog: (log) => set((s) => ({ parameterLogs: [...s.parameterLogs, log] })),
