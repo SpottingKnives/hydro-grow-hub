@@ -51,6 +51,7 @@ interface AppState {
   addTask: (task: GrowTask) => void; updateTask: (id: string, updates: Partial<GrowTask>) => void; deleteTask: (id: string) => void; toggleTask: (id: string) => void;
   addEvent: (event: GrowEvent) => void; deleteEvent: (id: string) => void; addParameterLog: (log: ParameterLog) => void; addFeedLog: (log: FeedLog) => void;
   addStrain: (strain: Strain) => void; updateStrain: (id: string, updates: Partial<Strain>) => void; deleteStrain: (id: string) => void;
+  clearAllData: () => void;
 }
 
 export const useStore = create<AppState>()(persist((set, get) => ({
@@ -58,13 +59,25 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   tasks: [], events: [], parameterLogs: [], alertRules: [], feedLogs: [], strains: [], growStrains: [], plants: [], environmentTimeline: [],
   parameters: [{ id: 'ph', name: 'pH', unit: 'pH', active: true }, { id: 'ec', name: 'EC', unit: 'mS/cm', active: true }, { id: 'temp', name: 'Temperature', unit: '°C', active: true }, { id: 'humidity', name: 'Humidity', unit: '%', active: true }],
 
-  addGrowCycle: (cycle, plants = []) => set((s) => ({
-    growCycles: [...s.growCycles, cycle],
-    plants: [...s.plants, ...plants],
-    stageHistory: [...s.stageHistory, { id: id(), grow_cycle_id: cycle.id, stage: cycle.current_stage, started_at: cycle.start_date, ended_at: null }],
-    // Single creation event — setup steps (plants, env) are not logged separately
-    events: [...s.events, mkEvent(cycle.id, 'note', `Grow created: ${cycle.name}`, `Started in stage ${cycle.current_stage}${plants.length ? ` with ${plants.length} plant${plants.length === 1 ? '' : 's'}` : ''}`)],
-  })),
+  addGrowCycle: (cycle, plants = []) => set((s) => {
+    const dueDate = today();
+    const logParamsTask: GrowTask = {
+      id: id(), grow_cycle_id: cycle.id,
+      name: 'Log Parameters', title: 'Log Parameters',
+      description: 'Daily parameter log for this grow.',
+      due_date: dueDate, stage_trigger: null, status: 'open',
+      completed: false, generated_from_environment: false,
+      priority: 'medium', reminder_time: null,
+      repeat: 'daily', repeat_parent_id: null,
+    };
+    return {
+      growCycles: [...s.growCycles, cycle],
+      plants: [...s.plants, ...plants],
+      stageHistory: [...s.stageHistory, { id: id(), grow_cycle_id: cycle.id, stage: cycle.current_stage, started_at: cycle.start_date, ended_at: null }],
+      tasks: [...s.tasks, logParamsTask],
+      events: [...s.events, mkEvent(cycle.id, 'note', `Grow created: ${cycle.name}`, `Started in stage ${cycle.current_stage}${plants.length ? ` with ${plants.length} plant${plants.length === 1 ? '' : 's'}` : ''}`)],
+    };
+  }),
   updateGrowCycle: (gid, updates) => set((s) => {
     const prev = s.growCycles.find((c) => c.id === gid);
     const newEvents: GrowEvent[] = [];
@@ -158,7 +171,13 @@ export const useStore = create<AppState>()(persist((set, get) => ({
     return { tasks: newTasks, events: [...s.events, ...extraEvents] };
   }),
   addEvent: (event) => set((s) => ({ events: [...s.events, event] })), deleteEvent: (eid) => set((s) => ({ events: s.events.filter((e) => e.id !== eid) })),
-  addParameterLog: (log) => set((s) => ({ parameterLogs: [...s.parameterLogs, log] })),
+  addParameterLog: (log) => set((s) => {
+    const cycle = s.growCycles.find((c) => c.id === log.grow_cycle_id);
+    return {
+      parameterLogs: [...s.parameterLogs, log],
+      events: [...s.events, mkEvent(log.grow_cycle_id, 'note', 'Parameters Logged', cycle ? cycle.name : '')],
+    };
+  }),
   addFeedLog: (log) => set((s) => ({
     feedLogs: [...s.feedLogs, log],
     events: [...s.events, mkEvent(log.grow_cycle_id, 'feed', `Feed logged${log.ec_measured != null ? ` (EC: ${log.ec_measured})` : ''}`, `${log.liters || log.water_volume}L`)],
@@ -166,6 +185,11 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   addStrain: (strain) => set((s) => ({ strains: [...s.strains, { ...strain, active: strain.active ?? true, updated_at: now() }] })),
   updateStrain: (sid, updates) => set((s) => ({ strains: s.strains.map((st) => st.id === sid ? { ...st, ...updates, updated_at: now() } : st) })),
   deleteStrain: (sid) => set((s) => ({ strains: s.strains.filter((st) => st.id !== sid) })),
+  clearAllData: () => set(() => ({
+    growCycles: [], stageHistory: [], environments: [], feedSchedules: [], nutrients: [],
+    tasks: [], events: [], parameterLogs: [], alertRules: [], feedLogs: [],
+    strains: [], growStrains: [], plants: [], environmentTimeline: [], parameters: [],
+  })),
 }), {
   name: 'hydro-grow-os', version: 10,
   migrate: (state: any) => ({

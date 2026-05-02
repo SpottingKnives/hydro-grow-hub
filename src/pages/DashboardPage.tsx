@@ -1,11 +1,17 @@
+import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { format, isAfter, isBefore, addDays, startOfDay } from "date-fns";
-import { Calendar as CalIcon, ListChecks } from "lucide-react";
+import { Calendar as CalIcon, ListChecks, Trash2 } from "lucide-react";
 import { StageBadge } from "@/components/StageBadge";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { LogParametersDialog } from "@/components/LogParametersDialog";
 
 export default function DashboardPage() {
-  const { growCycles, events, tasks, environments } = useStore();
+  const { growCycles, events, tasks, environments, clearAllData } = useStore();
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [logParams, setLogParams] = useState<{ growId: string | null; taskId: string } | null>(null);
 
   const today = startOfDay(new Date());
   const weekAhead = addDays(today, 7);
@@ -35,11 +41,23 @@ export default function DashboardPage() {
           <div className="glass-card p-6 text-center"><p className="text-sm text-muted-foreground">Nothing scheduled.</p></div>
         ) : (
           <div className="glass-card p-3 space-y-1">
-            {upcoming.map((it) => (
+            {upcoming.map((it) => {
+              const isLogParams = it.kind === "task" && it.title === "Log Parameters";
+              return (
               <div key={`${it.kind}-${it.id}`} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50">
                 {it.kind === "task" ? <ListChecks className="w-4 h-4 text-warning shrink-0" /> : <CalIcon className="w-4 h-4 text-muted-foreground shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{it.title}</p>
+                  {isLogParams ? (
+                    <button
+                      type="button"
+                      onClick={() => setLogParams({ growId: it.grow_cycle_id, taskId: it.id })}
+                      className="text-sm font-medium text-primary truncate text-left underline-offset-2 hover:underline"
+                    >
+                      {it.title}
+                    </button>
+                  ) : (
+                    <p className="text-sm font-medium text-foreground truncate">{it.title}</p>
+                  )}
                   <p className="text-[12px] leading-tight text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
                     <span>Upcoming</span>
                     {" • "}
@@ -49,7 +67,8 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -77,6 +96,33 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      <section className="space-y-2 pt-4 border-t border-border/50">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">DEV ONLY</p>
+        <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive" onClick={() => setConfirmClear(true)}>
+          <Trash2 className="w-4 h-4 mr-1" /> Clear All Data
+        </Button>
+      </section>
+
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear ALL app data?</AlertDialogTitle>
+            <AlertDialogDescription>This cannot be undone. All grow cycles, plants, environments, parameters, feed schedules, nutrients, tasks, events, and logs will be permanently removed.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { clearAllData(); setConfirmClear(false); }}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <LogParametersDialog
+        open={!!logParams}
+        onOpenChange={(o) => !o && setLogParams(null)}
+        growCycleId={logParams?.growId ?? null}
+        taskId={logParams?.taskId ?? null}
+      />
     </div>
   );
 }

@@ -14,11 +14,12 @@ import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { STAGES, type GrowStage, type GrowStatus } from "@/types";
 import { cn } from "@/lib/utils";
+import { LogParametersDialog } from "@/components/LogParametersDialog";
 
 export default function GrowCycleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
+  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, parameters, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
 
   const [slotDialog, setSlotDialog] = useState<number | null>(null);
   const [pickStrainId, setPickStrainId] = useState("");
@@ -26,6 +27,7 @@ export default function GrowCycleDetailPage() {
   const [removeForEnv, setRemoveForEnv] = useState<string[]>([]);
   const [pendingStage, setPendingStage] = useState<GrowStage | null>(null);
   const [confirmEnvId, setConfirmEnvId] = useState<string | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
 
   const cycle = growCycles.find((c) => c.id === id);
   if (!cycle) return (
@@ -282,8 +284,37 @@ export default function GrowCycleDetailPage() {
         </TabsContent>
 
         <TabsContent value="params">
-          <div className="glass-card p-4">
-            <p className="text-sm text-muted-foreground">Parameter logging UI coming soon.</p>
+          <div className="glass-card p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-foreground text-sm">Parameter Logs</h3>
+              <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setLogOpen(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Log Parameters
+              </Button>
+            </div>
+            {cycleParams.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No parameter logs yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {[...cycleParams].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log) => {
+                  const entries = log.values
+                    ? Object.entries(log.values)
+                    : log.parameter_id != null && log.value != null ? [[log.parameter_id, log.value] as [string, number]] : [];
+                  return (
+                    <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">{format(new Date(log.timestamp), "MMM d, HH:mm")}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 break-words">
+                        {entries.map(([pid, val]) => {
+                          const p = parameters.find((x) => x.id === pid);
+                          return `${p?.name ?? pid}: ${val}${p?.unit ? ` ${p.unit}` : ""}`;
+                        }).join(" · ") || "No values"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
@@ -364,6 +395,8 @@ export default function GrowCycleDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LogParametersDialog open={logOpen} onOpenChange={setLogOpen} growCycleId={cycle.id} />
     </div>
   );
 }
