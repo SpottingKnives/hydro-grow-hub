@@ -98,12 +98,14 @@ export default function TasksEventsPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className={cn("text-sm font-medium text-foreground", it.completed && "line-through opacity-50")}>{it.title}</p>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                    <span className="capitalize">{it.kind === "task" ? "task" : it.type.replace(/_/g, " ")}</span>
-                    {cycle && <span>· {cycle.name}</span>}
-                    {it.date && <span>· {format(new Date(it.date), "MMM d, yyyy")}</span>}
-                    {overdue && <span className="text-destructive">· overdue</span>}
-                  </div>
+                  <p className="mt-0.5 text-[12px] leading-tight text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                    <span className={cn("capitalize", overdue && "text-destructive")}>
+                      {it.kind === "task" ? (it.completed ? "Completed" : overdue ? "Overdue" : "Upcoming") : "Upcoming"}
+                    </span>
+                    {" • "}
+                    <span className="capitalize">{it.kind === "task" ? "Task" : it.type.replace(/_/g, " ")}</span>
+                    {it.date && <>{" • "}<span>{format(new Date(it.date), "d MMM")}</span></>}
+                  </p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel({ kind: it.kind, id: it.id })}>
                   <Trash2 className="w-3.5 h-3.5" />
