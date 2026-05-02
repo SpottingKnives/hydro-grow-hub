@@ -40,9 +40,14 @@ export default function DashboardPage() {
                 {it.kind === "task" ? <ListChecks className="w-4 h-4 text-warning shrink-0" /> : <CalIcon className="w-4 h-4 text-muted-foreground shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{it.title}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{it.kind === "task" ? "task" : it.type.replace(/_/g, " ")}</p>
+                  <p className="text-[12px] leading-tight text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                    <span>Upcoming</span>
+                    {" • "}
+                    <span className="capitalize">{it.kind === "task" ? "Task" : it.type.replace(/_/g, " ")}</span>
+                    {" • "}
+                    <span>{format(new Date(it.date), "d MMM HH:mm")}</span>
+                  </p>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">{format(new Date(it.date), "EEE, MMM d")}</span>
               </div>
             ))}
           </div>
