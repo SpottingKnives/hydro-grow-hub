@@ -11,6 +11,7 @@ import { Plus, Trash2, ListChecks, Calendar as CalIcon } from "lucide-react";
 import { format, isAfter, isBefore, startOfDay } from "date-fns";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
+import { FilterBar } from "@/components/FilterBar";
 import type { GrowTask, Priority, GrowStage, TaskRepeat } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -72,28 +73,19 @@ export default function TasksEventsPage() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(["both", "tasks", "events"] as Filter[]).map((f) => (
-          <Button key={f} size="sm" variant={filter === f ? "default" : "ghost"} onClick={() => setFilter(f)} className={cn("capitalize", filter === f && "gradient-primary text-primary-foreground")}>{f}</Button>
-        ))}
-      </div>
+      <FilterBar<Filter>
+        ariaLabel="Item type filter"
+        options={["both", "tasks", "events"] as const}
+        value={filter}
+        onChange={setFilter}
+      />
 
-      <div className="flex w-full items-stretch rounded-md border border-border bg-muted/30 overflow-hidden">
-        {(["all", "upcoming", "overdue", "completed"] as Status[]).map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={cn(
-              "flex-1 text-center capitalize whitespace-nowrap px-1 py-1.5 text-[11px] tracking-tight transition-colors",
-              status === s
-                ? "bg-primary text-primary-foreground font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+      <FilterBar<Status>
+        ariaLabel="Status filter"
+        options={["all", "upcoming", "overdue", "completed"] as const}
+        value={status}
+        onChange={setStatus}
+      />
 
       {items.length === 0 ? (
         <div className="glass-card p-12 text-center"><p className="text-muted-foreground">Nothing here yet.</p></div>
