@@ -12,6 +12,7 @@ import { format, isAfter, isBefore, startOfDay } from "date-fns";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { FilterBar } from "@/components/FilterBar";
+import { LogParametersDialog } from "@/components/LogParametersDialog";
 import type { GrowTask, Priority, GrowStage, TaskRepeat } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export default function TasksEventsPage() {
   const [status, setStatus] = useState<Status>("all");
   const [form, setForm] = useState({ title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" as Priority, repeat: "none" as TaskRepeat });
   const [confirmDel, setConfirmDel] = useState<{ kind: "task" | "event"; id: string } | null>(null);
+  const [logParams, setLogParams] = useState<{ growId: string | null; taskId: string } | null>(null);
 
   const today = startOfDay(new Date());
 
@@ -102,7 +104,17 @@ export default function TasksEventsPage() {
                   <CalIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-medium text-foreground", it.completed && "line-through opacity-50")}>{it.title}</p>
+                  {it.kind === "task" && it.title === "Log Parameters" && !it.completed ? (
+                    <button
+                      type="button"
+                      onClick={() => setLogParams({ growId: it.grow_cycle_id, taskId: it.id })}
+                      className="text-sm font-medium text-primary text-left underline-offset-2 hover:underline"
+                    >
+                      {it.title}
+                    </button>
+                  ) : (
+                    <p className={cn("text-sm font-medium text-foreground", it.completed && "line-through opacity-50")}>{it.title}</p>
+                  )}
                   <p className="mt-0.5 text-[12px] leading-tight text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
                     <span className={cn("capitalize", overdue && "text-destructive")}>
                       {it.kind === "task" ? (it.completed ? "Completed" : overdue ? "Overdue" : "Upcoming") : "Upcoming"}
@@ -183,6 +195,13 @@ export default function TasksEventsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LogParametersDialog
+        open={!!logParams}
+        onOpenChange={(o) => !o && setLogParams(null)}
+        growCycleId={logParams?.growId ?? null}
+        taskId={logParams?.taskId ?? null}
+      />
     </div>
   );
 }
