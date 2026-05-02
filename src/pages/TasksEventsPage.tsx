@@ -76,9 +76,22 @@ export default function TasksEventsPage() {
         {(["both", "tasks", "events"] as Filter[]).map((f) => (
           <Button key={f} size="sm" variant={filter === f ? "default" : "ghost"} onClick={() => setFilter(f)} className={cn("capitalize", filter === f && "gradient-primary text-primary-foreground")}>{f}</Button>
         ))}
-        <span className="w-px bg-border mx-2" />
+      </div>
+
+      <div className="flex w-full items-stretch rounded-md border border-border bg-muted/30 overflow-hidden">
         {(["all", "upcoming", "overdue", "completed"] as Status[]).map((s) => (
-          <Button key={s} size="sm" variant={status === s ? "default" : "ghost"} onClick={() => setStatus(s)} className={cn("capitalize", status === s && "gradient-primary text-primary-foreground")}>{s}</Button>
+          <button
+            key={s}
+            onClick={() => setStatus(s)}
+            className={cn(
+              "flex-1 text-center capitalize whitespace-nowrap px-1 py-1.5 text-[11px] tracking-tight transition-colors",
+              status === s
+                ? "bg-primary text-primary-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {s}
+          </button>
         ))}
       </div>
 
