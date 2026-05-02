@@ -172,8 +172,10 @@ export interface GrowEvent {
 export interface ParameterLog {
   id: string;
   grow_cycle_id: string;
-  parameter_id: string;
-  value: number;
+  environment_id?: string | null;
+  parameter_id?: string;
+  value?: number;
+  values?: Record<string, number>;
   timestamp: string;
 }
 
