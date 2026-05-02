@@ -19,7 +19,7 @@ import { LogParametersDialog } from "@/components/LogParametersDialog";
 export default function GrowCycleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
+  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, parameters, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
 
   const [slotDialog, setSlotDialog] = useState<number | null>(null);
   const [pickStrainId, setPickStrainId] = useState("");
@@ -50,7 +50,6 @@ export default function GrowCycleDetailPage() {
 
   const eligibleEnvs = environments.filter((e) => e.supported_stages.includes(cycle.current_stage));
   const currentEnv = environments.find((e) => e.id === cycle.environment_id);
-  const envParams = (currentEnv?.parameter_ids ?? []).map((pid) => useStore.getState().parameters.find((p) => p.id === pid)).filter(Boolean) as { id: string; name: string; unit: string }[];
   const siteCount = currentEnv?.site_count ?? 0;
   const slots = Array.from({ length: siteCount }, (_, i) => activePlants.find((p) => p.slot_index === i) ?? null);
 
@@ -307,7 +306,7 @@ export default function GrowCycleDetailPage() {
                       </div>
                       <div className="text-xs text-muted-foreground mt-1 break-words">
                         {entries.map(([pid, val]) => {
-                          const p = useStore.getState().parameters.find((x) => x.id === pid);
+                          const p = parameters.find((x) => x.id === pid);
                           return `${p?.name ?? pid}: ${val}${p?.unit ? ` ${p.unit}` : ""}`;
                         }).join(" · ") || "No values"}
                       </div>
