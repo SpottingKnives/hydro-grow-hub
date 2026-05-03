@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,11 @@ import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { StrainsSection } from "@/components/StrainsSection";
 import { LibraryRow } from "@/components/LibraryRow";
-import { STAGES, type FeedMode, type FeedSchedule, type Environment, type GrowCycle, type GrowStage, type Plant, type Strain } from "@/types";
+import { useState } from "react";
+import { STAGES, type FeedMode, type GrowCycle, type GrowStage, type Plant } from "@/types";
+import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog";
+import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
+import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { Link } from "react-router-dom";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -20,16 +23,14 @@ const ADD_NEW_STRAIN = "__add_new_strain__";
 const ADD_NEW = "__add_new__";
 
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, addStrain, addEnvironment, addFeedSchedule, deleteGrowCycle, moveGrowEnvironment } = useStore();
+  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [strainCreateOpen, setStrainCreateOpen] = useState(false);
-  const [strainDraft, setStrainDraft] = useState({ name: "", flower_weeks: "8" });
   const [envCreateOpen, setEnvCreateOpen] = useState(false);
-  const [envDraft, setEnvDraft] = useState({ name: "", site_count: "1" });
   const [schedCreateOpen, setSchedCreateOpen] = useState(false);
-  const [schedDraft, setSchedDraft] = useState({ name: "" });
+  const [strainTargetRow, setStrainTargetRow] = useState<string | null>(null);
   const [plantRows, setPlantRows] = useState<{ tmpId: string; strain_id: string }[]>([]);
   const [form, setForm] = useState({
     custom: "Grow",
@@ -52,6 +53,7 @@ export default function GrowCyclesPage() {
   };
   const updatePlantRow = (tmpId: string, strain_id: string) => {
     if (strain_id === ADD_NEW_STRAIN) {
+      setStrainTargetRow(tmpId);
       setStrainCreateOpen(true);
       return;
     }
@@ -68,24 +70,18 @@ export default function GrowCyclesPage() {
     });
   };
 
-  const saveDraftStrain = () => {
-    const name = strainDraft.name.trim(); if (!name) return;
-    const flower = parseFloat(strainDraft.flower_weeks) || 8;
-    const newStrain: Strain = {
-      id: crypto.randomUUID(), name, breeder: "", veg_weeks: 0, flower_weeks: flower,
-      traits: [], notes: "", active: true, updated_at: new Date().toISOString(),
-    };
-    addStrain(newStrain);
-    // auto-assign to the last empty row (or add a new row)
+  const onStrainCreated = (id: string) => {
     setPlantRows((r) => {
+      if (strainTargetRow) {
+        return r.map((x) => x.tmpId === strainTargetRow ? { ...x, strain_id: id } : x);
+      }
       const emptyIdx = r.findIndex((x) => !x.strain_id);
       if (emptyIdx >= 0) {
-        const copy = [...r]; copy[emptyIdx] = { ...copy[emptyIdx], strain_id: newStrain.id }; return copy;
+        const copy = [...r]; copy[emptyIdx] = { ...copy[emptyIdx], strain_id: id }; return copy;
       }
-      return [...r, { tmpId: crypto.randomUUID(), strain_id: newStrain.id }];
+      return [...r, { tmpId: crypto.randomUUID(), strain_id: id }];
     });
-    setStrainDraft({ name: "", flower_weeks: "8" });
-    setStrainCreateOpen(false);
+    setStrainTargetRow(null);
   };
 
   const create = () => {
@@ -194,7 +190,7 @@ export default function GrowCyclesPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Environment" helper={eligibleEnvs.length === 0 ? "No environment supports the selected starting stage" : "Filtered by starting stage"}>
-                <Select value={form.environment_id} onValueChange={(v) => { if (v === ADD_NEW) { setEnvDraft({ name: "", site_count: "1" }); setEnvCreateOpen(true); } else setForm({ ...form, environment_id: v }); }}>
+                <Select value={form.environment_id} onValueChange={(v) => { if (v === ADD_NEW) { setEnvCreateOpen(true); } else setForm({ ...form, environment_id: v }); }}>
                   <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Select environment"} /></SelectTrigger>
                   <SelectContent>
                     {eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
@@ -203,7 +199,7 @@ export default function GrowCyclesPage() {
                 </Select>
               </FormField>
               <FormField label="Feed Schedule" helper="Optional. Can be set later.">
-                <Select value={form.feed_schedule_id} onValueChange={(v) => { if (v === ADD_NEW) { setSchedDraft({ name: "" }); setSchedCreateOpen(true); } else setForm({ ...form, feed_schedule_id: v }); }}>
+                <Select value={form.feed_schedule_id} onValueChange={(v) => { if (v === ADD_NEW) { setSchedCreateOpen(true); } else setForm({ ...form, feed_schedule_id: v }); }}>
                   <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select schedule" /></SelectTrigger>
                   <SelectContent>
                     {feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -254,59 +250,9 @@ export default function GrowCyclesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={strainCreateOpen} onOpenChange={setStrainCreateOpen}>
-        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
-          <DialogHeader><DialogTitle>New Strain</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Strain Name" htmlFor="quick-strain" required>
-              <Input id="quick-strain" autoFocus value={strainDraft.name} onChange={(e) => setStrainDraft({ ...strainDraft, name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormField label="Est. Flower Duration (weeks)" htmlFor="quick-flower">
-              <Input id="quick-flower" type="number" min="0" step="0.1" value={strainDraft.flower_weeks} onChange={(e) => setStrainDraft({ ...strainDraft, flower_weeks: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter onSave={saveDraftStrain} onCancel={() => setStrainCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!strainDraft.name.trim()} />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={envCreateOpen} onOpenChange={setEnvCreateOpen}>
-        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
-          <DialogHeader><DialogTitle>New Environment</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Name" htmlFor="quick-env-name" required>
-              <Input id="quick-env-name" autoFocus value={envDraft.name} onChange={(e) => setEnvDraft({ ...envDraft, name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormField label="Site Count" htmlFor="quick-env-sites" required>
-              <Input id="quick-env-sites" type="number" min={1} value={envDraft.site_count} onChange={(e) => setEnvDraft({ ...envDraft, site_count: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter onSave={() => {
-              const name = envDraft.name.trim(); if (!name) return;
-              const env: Environment = { id: crypto.randomUUID(), name, site_count: parseInt(envDraft.site_count) || 1, supported_stages: [form.starting_stage], system_description: "", parameter_ids: [], task_templates: [] };
-              addEnvironment(env);
-              setForm((f) => ({ ...f, environment_id: env.id }));
-              setEnvCreateOpen(false);
-            }} onCancel={() => setEnvCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!envDraft.name.trim()} />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={schedCreateOpen} onOpenChange={setSchedCreateOpen}>
-        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
-          <DialogHeader><DialogTitle>New Feed Schedule</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Name" htmlFor="quick-sched-name" required>
-              <Input id="quick-sched-name" autoFocus value={schedDraft.name} onChange={(e) => setSchedDraft({ name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter onSave={() => {
-              const name = schedDraft.name.trim(); if (!name) return;
-              const sched: FeedSchedule = { id: crypto.randomUUID(), name, notes: "", rows: [], ec_targets: {}, created_at: new Date().toISOString() };
-              addFeedSchedule(sched);
-              setForm((f) => ({ ...f, feed_schedule_id: sched.id }));
-              setSchedCreateOpen(false);
-            }} onCancel={() => setSchedCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!schedDraft.name.trim()} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StrainFormDialog open={strainCreateOpen} onOpenChange={(o) => { setStrainCreateOpen(o); if (!o) setStrainTargetRow(null); }} onCreated={onStrainCreated} />
+      <EnvironmentFormDialog open={envCreateOpen} onOpenChange={setEnvCreateOpen} defaultStages={[form.starting_stage]} onCreated={(id) => setForm((f) => ({ ...f, environment_id: id }))} />
+      <FeedScheduleFormDialog open={schedCreateOpen} onOpenChange={setSchedCreateOpen} onCreated={(id) => setForm((f) => ({ ...f, feed_schedule_id: id }))} />
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
