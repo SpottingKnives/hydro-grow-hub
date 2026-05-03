@@ -98,9 +98,6 @@ export default function FeedSchedulesPage() {
                     onClick={() => {
                       setAddRowFor({ scheduleId: schedule.id, category: cat });
                       setPickedId("");
-                      setCreateMode(false);
-                      setCreateName("");
-                      setCreateForm(cat === "additive" ? "liquid" : "dry");
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> Add {CATEGORY_LABELS[cat].slice(0, -1)}
@@ -113,29 +110,7 @@ export default function FeedSchedulesPage() {
         })}
       </div>
 
-      {/* Schedule meta dialog */}
-      <Dialog open={metaOpen} onOpenChange={setMetaOpen}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle>{metaForm.id ? "Edit Feed Schedule" : "New Feed Schedule"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Schedule Name" htmlFor="sched-name" required>
-              <Input id="sched-name" value={metaForm.name} onChange={(e) => setMetaForm({ ...metaForm, name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormField label="Notes" htmlFor="sched-notes" helper="Optional context, growth phase, recipe source, etc.">
-              <Textarea id="sched-notes" value={metaForm.notes} onChange={(e) => setMetaForm({ ...metaForm, notes: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter
-              onSave={saveMeta}
-              onCancel={() => setMetaOpen(false)}
-              onDelete={metaForm.id ? () => setConfirmDeleteSchedule(true) : undefined}
-              saveDisabled={!metaForm.name.trim()}
-              lastUpdated={metaForm.id ? metaForm.updated_at : undefined}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <FeedScheduleFormDialog open={metaOpen} onOpenChange={setMetaOpen} initial={metaInitial} onCreated={(id) => { if (!metaInitial) setEditingId(id); }} />
 
       {/* Add row dialog */}
       <Dialog open={!!addRowFor} onOpenChange={(o) => !o && setAddRowFor(null)}>
@@ -145,10 +120,8 @@ export default function FeedSchedulesPage() {
           </DialogHeader>
           {addRowFor && (
             <div className="space-y-4 mt-2">
-              {!createMode ? (
-                <>
                    <FormField label="Item" helper="Pick from your nutrient library">
-                     <Select value={pickedId} onValueChange={(v) => { if (v === "__add_new__") { setCreateMode(true); setPickedId(""); } else setPickedId(v); }}>
+                     <Select value={pickedId} onValueChange={(v) => { if (v === "__add_new__") { setNutrientCreateOpen(true); setPickedId(""); } else setPickedId(v); }}>
                       <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select an item" /></SelectTrigger>
                       <SelectContent>
                         {nutrients
@@ -158,49 +131,18 @@ export default function FeedSchedulesPage() {
                       </SelectContent>
                     </Select>
                   </FormField>
-                </>
-              ) : (
-                <>
-                  <FormField label="Name" htmlFor="row-new-name" required>
-                    <Input id="row-new-name" value={createName} onChange={(e) => setCreateName(e.target.value)} className="bg-muted border-border" />
-                  </FormField>
-                  <FormField label="Form" helper="Dry uses g/L, Liquid uses ml/L">
-                    <Select value={createForm} onValueChange={(v) => setCreateForm(v as NutrientType)}>
-                      <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dry">Dry (g/L)</SelectItem>
-                        <SelectItem value="liquid">Liquid (ml/L)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormField>
-                  <button type="button" className="text-xs text-primary hover:underline" onClick={() => setCreateMode(false)}>
-                    ← Pick from library instead
-                  </button>
-                </>
-              )}
               <FormFooter
                 onSave={confirmAddRow}
                 onCancel={() => setAddRowFor(null)}
                 saveLabel="Add"
-                saveDisabled={createMode ? !createName.trim() : !pickedId}
+                saveDisabled={!pickedId}
               />
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={confirmDeleteSchedule} onOpenChange={setConfirmDeleteSchedule}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (metaForm.id) deleteFeedSchedule(metaForm.id); setConfirmDeleteSchedule(false); setMetaOpen(false); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <NutrientFormDialog open={nutrientCreateOpen} onOpenChange={setNutrientCreateOpen} defaultCategory={addRowFor?.category} defaultForm={addRowFor?.category === "additive" ? "liquid" : "dry"} onCreated={(n) => { if (addRowFor) { addScheduleRow(addRowFor.scheduleId, n); setAddRowFor(null); setPickedId(""); } }} />
 
       <AlertDialog open={!!confirmDeleteRowId} onOpenChange={(o) => !o && setConfirmDeleteRowId(null)}>
         <AlertDialogContent>
