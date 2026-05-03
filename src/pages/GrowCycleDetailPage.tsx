@@ -409,6 +409,48 @@ export default function GrowCycleDetailPage() {
       </AlertDialog>
 
       <LogParametersDialog open={logOpen} onOpenChange={setLogOpen} growCycleId={cycle.id} />
+
+      <Dialog open={envCreateOpen} onOpenChange={setEnvCreateOpen}>
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
+          <DialogHeader><DialogTitle>New Environment</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <FormField label="Name" htmlFor="ed-env-name" required>
+              <Input id="ed-env-name" autoFocus value={envDraft.name} onChange={(e) => setEnvDraft({ ...envDraft, name: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormField label="Site Count" htmlFor="ed-env-sites" required>
+              <Input id="ed-env-sites" type="number" min={1} value={envDraft.site_count} onChange={(e) => setEnvDraft({ ...envDraft, site_count: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormFooter onSave={() => {
+              const name = envDraft.name.trim(); if (!name) return;
+              const env: Environment = { id: crypto.randomUUID(), name, site_count: parseInt(envDraft.site_count) || 1, supported_stages: [cycle.current_stage], system_description: "", parameter_ids: [], task_templates: [] };
+              addEnvironment(env);
+              setEnvCreateOpen(false);
+              setTimeout(() => tryEnvChange(env.id), 0);
+            }} onCancel={() => setEnvCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!envDraft.name.trim()} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={strainCreateOpen} onOpenChange={setStrainCreateOpen}>
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
+          <DialogHeader><DialogTitle>New Strain</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <FormField label="Strain Name" htmlFor="ed-strain-name" required>
+              <Input id="ed-strain-name" autoFocus value={strainDraft.name} onChange={(e) => setStrainDraft({ ...strainDraft, name: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormField label="Est. Flower Duration (weeks)" htmlFor="ed-strain-flower">
+              <Input id="ed-strain-flower" type="number" min="0" step="0.1" value={strainDraft.flower_weeks} onChange={(e) => setStrainDraft({ ...strainDraft, flower_weeks: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormFooter onSave={() => {
+              const name = strainDraft.name.trim(); if (!name) return;
+              const strain: Strain = { id: crypto.randomUUID(), name, breeder: "", veg_weeks: 0, flower_weeks: parseFloat(strainDraft.flower_weeks) || 8, traits: [], notes: "", active: true, updated_at: new Date().toISOString() };
+              addStrain(strain);
+              setPickStrainId(strain.id);
+              setStrainCreateOpen(false);
+            }} onCancel={() => setStrainCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!strainDraft.name.trim()} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
