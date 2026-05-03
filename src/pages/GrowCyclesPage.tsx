@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,11 @@ import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { StrainsSection } from "@/components/StrainsSection";
 import { LibraryRow } from "@/components/LibraryRow";
-import { STAGES, type FeedMode, type FeedSchedule, type Environment, type GrowCycle, type GrowStage, type Plant, type Strain } from "@/types";
+import { useState } from "react";
+import { STAGES, type FeedMode, type GrowCycle, type GrowStage, type Plant } from "@/types";
+import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog";
+import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
+import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { Link } from "react-router-dom";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -20,16 +23,14 @@ const ADD_NEW_STRAIN = "__add_new_strain__";
 const ADD_NEW = "__add_new__";
 
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, addStrain, addEnvironment, addFeedSchedule, deleteGrowCycle, moveGrowEnvironment } = useStore();
+  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [strainCreateOpen, setStrainCreateOpen] = useState(false);
-  const [strainDraft, setStrainDraft] = useState({ name: "", flower_weeks: "8" });
   const [envCreateOpen, setEnvCreateOpen] = useState(false);
-  const [envDraft, setEnvDraft] = useState({ name: "", site_count: "1" });
   const [schedCreateOpen, setSchedCreateOpen] = useState(false);
-  const [schedDraft, setSchedDraft] = useState({ name: "" });
+  const [strainTargetRow, setStrainTargetRow] = useState<string | null>(null);
   const [plantRows, setPlantRows] = useState<{ tmpId: string; strain_id: string }[]>([]);
   const [form, setForm] = useState({
     custom: "Grow",
