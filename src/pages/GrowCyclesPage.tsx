@@ -53,6 +53,7 @@ export default function GrowCyclesPage() {
   };
   const updatePlantRow = (tmpId: string, strain_id: string) => {
     if (strain_id === ADD_NEW_STRAIN) {
+      setStrainTargetRow(tmpId);
       setStrainCreateOpen(true);
       return;
     }
@@ -69,24 +70,18 @@ export default function GrowCyclesPage() {
     });
   };
 
-  const saveDraftStrain = () => {
-    const name = strainDraft.name.trim(); if (!name) return;
-    const flower = parseFloat(strainDraft.flower_weeks) || 8;
-    const newStrain: Strain = {
-      id: crypto.randomUUID(), name, breeder: "", veg_weeks: 0, flower_weeks: flower,
-      traits: [], notes: "", active: true, updated_at: new Date().toISOString(),
-    };
-    addStrain(newStrain);
-    // auto-assign to the last empty row (or add a new row)
+  const onStrainCreated = (id: string) => {
     setPlantRows((r) => {
+      if (strainTargetRow) {
+        return r.map((x) => x.tmpId === strainTargetRow ? { ...x, strain_id: id } : x);
+      }
       const emptyIdx = r.findIndex((x) => !x.strain_id);
       if (emptyIdx >= 0) {
-        const copy = [...r]; copy[emptyIdx] = { ...copy[emptyIdx], strain_id: newStrain.id }; return copy;
+        const copy = [...r]; copy[emptyIdx] = { ...copy[emptyIdx], strain_id: id }; return copy;
       }
-      return [...r, { tmpId: crypto.randomUUID(), strain_id: newStrain.id }];
+      return [...r, { tmpId: crypto.randomUUID(), strain_id: id }];
     });
-    setStrainDraft({ name: "", flower_weeks: "8" });
-    setStrainCreateOpen(false);
+    setStrainTargetRow(null);
   };
 
   const create = () => {
