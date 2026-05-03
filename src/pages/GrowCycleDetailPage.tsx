@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,14 +13,16 @@ import { ArrowLeft, X, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
-import { STAGES, type GrowStage, type GrowStatus } from "@/types";
+import { STAGES, type Environment, type Strain, type GrowStage, type GrowStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
+
+const ADD_NEW = "__add_new__";
 
 export default function GrowCycleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, parameters, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
+  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, parameters, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant, addEnvironment, addStrain } = useStore();
 
   const [slotDialog, setSlotDialog] = useState<number | null>(null);
   const [pickStrainId, setPickStrainId] = useState("");
@@ -28,6 +31,10 @@ export default function GrowCycleDetailPage() {
   const [pendingStage, setPendingStage] = useState<GrowStage | null>(null);
   const [confirmEnvId, setConfirmEnvId] = useState<string | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [envCreateOpen, setEnvCreateOpen] = useState(false);
+  const [envDraft, setEnvDraft] = useState({ name: "", site_count: "1" });
+  const [strainCreateOpen, setStrainCreateOpen] = useState(false);
+  const [strainDraft, setStrainDraft] = useState({ name: "", flower_weeks: "8" });
 
   const cycle = growCycles.find((c) => c.id === id);
   if (!cycle) return (
@@ -127,9 +134,12 @@ export default function GrowCycleDetailPage() {
             </Select>
           </FormField>
           <FormField label="Environment" helper="Filtered by current stage">
-            <Select value={cycle.environment_id ?? ""} onValueChange={tryEnvChange}>
+            <Select value={cycle.environment_id ?? ""} onValueChange={(v) => { if (v === ADD_NEW) { setEnvDraft({ name: "", site_count: "1" }); setEnvCreateOpen(true); } else tryEnvChange(v); }}>
               <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Select environment"} /></SelectTrigger>
-              <SelectContent>{eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name} ({e.site_count} sites)</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name} ({e.site_count} sites)</SelectItem>)}
+                <SelectItem value={ADD_NEW}>+ Create New</SelectItem>
+              </SelectContent>
             </Select>
           </FormField>
         </div>
@@ -325,9 +335,12 @@ export default function GrowCycleDetailPage() {
           <DialogHeader><DialogTitle>Assign Plant — Site {slotDialog !== null ? slotDialog + 1 : ""}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <FormField label="Strain" required>
-              <Select value={pickStrainId} onValueChange={setPickStrainId}>
+              <Select value={pickStrainId} onValueChange={(v) => { if (v === ADD_NEW) { setStrainDraft({ name: "", flower_weeks: "8" }); setStrainCreateOpen(true); } else setPickStrainId(v); }}>
                 <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select strain" /></SelectTrigger>
-                <SelectContent>{strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {strains.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  <SelectItem value={ADD_NEW}>+ Create New</SelectItem>
+                </SelectContent>
               </Select>
             </FormField>
             <FormFooter onSave={onAssign} onCancel={() => setSlotDialog(null)} saveLabel="Assign" saveDisabled={!pickStrainId} />
@@ -397,6 +410,48 @@ export default function GrowCycleDetailPage() {
       </AlertDialog>
 
       <LogParametersDialog open={logOpen} onOpenChange={setLogOpen} growCycleId={cycle.id} />
+
+      <Dialog open={envCreateOpen} onOpenChange={setEnvCreateOpen}>
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
+          <DialogHeader><DialogTitle>New Environment</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <FormField label="Name" htmlFor="ed-env-name" required>
+              <Input id="ed-env-name" autoFocus value={envDraft.name} onChange={(e) => setEnvDraft({ ...envDraft, name: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormField label="Site Count" htmlFor="ed-env-sites" required>
+              <Input id="ed-env-sites" type="number" min={1} value={envDraft.site_count} onChange={(e) => setEnvDraft({ ...envDraft, site_count: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormFooter onSave={() => {
+              const name = envDraft.name.trim(); if (!name) return;
+              const env: Environment = { id: crypto.randomUUID(), name, site_count: parseInt(envDraft.site_count) || 1, supported_stages: [cycle.current_stage], system_description: "", parameter_ids: [], task_templates: [] };
+              addEnvironment(env);
+              setEnvCreateOpen(false);
+              setTimeout(() => tryEnvChange(env.id), 0);
+            }} onCancel={() => setEnvCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!envDraft.name.trim()} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={strainCreateOpen} onOpenChange={setStrainCreateOpen}>
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
+          <DialogHeader><DialogTitle>New Strain</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <FormField label="Strain Name" htmlFor="ed-strain-name" required>
+              <Input id="ed-strain-name" autoFocus value={strainDraft.name} onChange={(e) => setStrainDraft({ ...strainDraft, name: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormField label="Est. Flower Duration (weeks)" htmlFor="ed-strain-flower">
+              <Input id="ed-strain-flower" type="number" min="0" step="0.1" value={strainDraft.flower_weeks} onChange={(e) => setStrainDraft({ ...strainDraft, flower_weeks: e.target.value })} className="bg-muted border-border" />
+            </FormField>
+            <FormFooter onSave={() => {
+              const name = strainDraft.name.trim(); if (!name) return;
+              const strain: Strain = { id: crypto.randomUUID(), name, breeder: "", veg_weeks: 0, flower_weeks: parseFloat(strainDraft.flower_weeks) || 8, traits: [], notes: "", active: true, updated_at: new Date().toISOString() };
+              addStrain(strain);
+              setPickStrainId(strain.id);
+              setStrainCreateOpen(false);
+            }} onCancel={() => setStrainCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!strainDraft.name.trim()} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
