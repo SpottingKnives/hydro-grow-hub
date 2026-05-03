@@ -179,19 +179,17 @@ export default function FeedSchedulesPage() {
             <div className="space-y-4 mt-2">
               {!createMode ? (
                 <>
-                  <FormField label="Item" helper="Pick from your nutrient library">
-                    <Select value={pickedId} onValueChange={setPickedId}>
+                   <FormField label="Item" helper="Pick from your nutrient library">
+                     <Select value={pickedId} onValueChange={(v) => { if (v === "__add_new__") { setCreateMode(true); setPickedId(""); } else setPickedId(v); }}>
                       <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select an item" /></SelectTrigger>
                       <SelectContent>
                         {nutrients
                           .filter((n) => n.active && n.category === addRowFor.category && !feedSchedules.find((s) => s.id === addRowFor.scheduleId)?.rows.some((r) => r.nutrient_id === n.id))
                           .map((n) => <SelectItem key={n.id} value={n.id}>{n.name} ({formUnit(n.form)})</SelectItem>)}
+                        <SelectItem value="__add_new__">+ Create New</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormField>
-                  <button type="button" className="text-xs text-primary hover:underline" onClick={() => setCreateMode(true)}>
-                    + Create a new item instead
-                  </button>
                 </>
               ) : (
                 <>
