@@ -190,7 +190,7 @@ export default function GrowCyclesPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Environment" helper={eligibleEnvs.length === 0 ? "No environment supports the selected starting stage" : "Filtered by starting stage"}>
-                <Select value={form.environment_id} onValueChange={(v) => { if (v === ADD_NEW) { setEnvDraft({ name: "", site_count: "1" }); setEnvCreateOpen(true); } else setForm({ ...form, environment_id: v }); }}>
+                <Select value={form.environment_id} onValueChange={(v) => { if (v === ADD_NEW) { setEnvCreateOpen(true); } else setForm({ ...form, environment_id: v }); }}>
                   <SelectTrigger className="bg-muted border-border"><SelectValue placeholder={eligibleEnvs.length === 0 ? "No matching environment" : "Select environment"} /></SelectTrigger>
                   <SelectContent>
                     {eligibleEnvs.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
@@ -199,7 +199,7 @@ export default function GrowCyclesPage() {
                 </Select>
               </FormField>
               <FormField label="Feed Schedule" helper="Optional. Can be set later.">
-                <Select value={form.feed_schedule_id} onValueChange={(v) => { if (v === ADD_NEW) { setSchedDraft({ name: "" }); setSchedCreateOpen(true); } else setForm({ ...form, feed_schedule_id: v }); }}>
+                <Select value={form.feed_schedule_id} onValueChange={(v) => { if (v === ADD_NEW) { setSchedCreateOpen(true); } else setForm({ ...form, feed_schedule_id: v }); }}>
                   <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select schedule" /></SelectTrigger>
                   <SelectContent>
                     {feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -250,59 +250,9 @@ export default function GrowCyclesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={strainCreateOpen} onOpenChange={setStrainCreateOpen}>
-        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
-          <DialogHeader><DialogTitle>New Strain</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Strain Name" htmlFor="quick-strain" required>
-              <Input id="quick-strain" autoFocus value={strainDraft.name} onChange={(e) => setStrainDraft({ ...strainDraft, name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormField label="Est. Flower Duration (weeks)" htmlFor="quick-flower">
-              <Input id="quick-flower" type="number" min="0" step="0.1" value={strainDraft.flower_weeks} onChange={(e) => setStrainDraft({ ...strainDraft, flower_weeks: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter onSave={saveDraftStrain} onCancel={() => setStrainCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!strainDraft.name.trim()} />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={envCreateOpen} onOpenChange={setEnvCreateOpen}>
-        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
-          <DialogHeader><DialogTitle>New Environment</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Name" htmlFor="quick-env-name" required>
-              <Input id="quick-env-name" autoFocus value={envDraft.name} onChange={(e) => setEnvDraft({ ...envDraft, name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormField label="Site Count" htmlFor="quick-env-sites" required>
-              <Input id="quick-env-sites" type="number" min={1} value={envDraft.site_count} onChange={(e) => setEnvDraft({ ...envDraft, site_count: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter onSave={() => {
-              const name = envDraft.name.trim(); if (!name) return;
-              const env: Environment = { id: crypto.randomUUID(), name, site_count: parseInt(envDraft.site_count) || 1, supported_stages: [form.starting_stage], system_description: "", parameter_ids: [], task_templates: [] };
-              addEnvironment(env);
-              setForm((f) => ({ ...f, environment_id: env.id }));
-              setEnvCreateOpen(false);
-            }} onCancel={() => setEnvCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!envDraft.name.trim()} />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={schedCreateOpen} onOpenChange={setSchedCreateOpen}>
-        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)]">
-          <DialogHeader><DialogTitle>New Feed Schedule</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <FormField label="Name" htmlFor="quick-sched-name" required>
-              <Input id="quick-sched-name" autoFocus value={schedDraft.name} onChange={(e) => setSchedDraft({ name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            <FormFooter onSave={() => {
-              const name = schedDraft.name.trim(); if (!name) return;
-              const sched: FeedSchedule = { id: crypto.randomUUID(), name, notes: "", rows: [], ec_targets: {}, created_at: new Date().toISOString() };
-              addFeedSchedule(sched);
-              setForm((f) => ({ ...f, feed_schedule_id: sched.id }));
-              setSchedCreateOpen(false);
-            }} onCancel={() => setSchedCreateOpen(false)} saveLabel="Create & Use" saveDisabled={!schedDraft.name.trim()} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StrainFormDialog open={strainCreateOpen} onOpenChange={(o) => { setStrainCreateOpen(o); if (!o) setStrainTargetRow(null); }} onCreated={onStrainCreated} />
+      <EnvironmentFormDialog open={envCreateOpen} onOpenChange={setEnvCreateOpen} defaultStages={[form.starting_stage]} onCreated={(id) => setForm((f) => ({ ...f, environment_id: id }))} />
+      <FeedScheduleFormDialog open={schedCreateOpen} onOpenChange={setSchedCreateOpen} onCreated={(id) => setForm((f) => ({ ...f, feed_schedule_id: id }))} />
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
