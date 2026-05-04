@@ -7,41 +7,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, ListChecks, Calendar as CalIcon } from "lucide-react";
-import { format, isAfter, isBefore, startOfDay } from "date-fns";
+import { Plus, Trash2 } from "lucide-react";
+import { isBefore, startOfDay, format } from "date-fns";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { FilterBar } from "@/components/FilterBar";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
-import type { GrowTask, Priority, GrowStage, TaskRepeat } from "@/types";
+import type { GrowTask, Priority, TaskRepeat } from "@/types";
 import { cn } from "@/lib/utils";
 
-type Filter = "both" | "tasks" | "events";
 type Status = "all" | "upcoming" | "overdue" | "completed";
 
 export default function TasksEventsPage() {
-  const { tasks, events, growCycles, addTask, toggleTask, deleteTask, deleteEvent } = useStore();
+  const { tasks, growCycles, addTask, toggleTask, deleteTask } = useStore();
   const [open, setOpen] = useState(false);
-  const [filter, setFilter] = useState<Filter>("both");
   const [status, setStatus] = useState<Status>("all");
   const [form, setForm] = useState({ title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" as Priority, repeat: "none" as TaskRepeat });
-  const [confirmDel, setConfirmDel] = useState<{ kind: "task" | "event"; id: string } | null>(null);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [logParams, setLogParams] = useState<{ growId: string | null; taskId: string } | null>(null);
 
   const today = startOfDay(new Date());
 
   const items = useMemo(() => {
-    const all: { kind: "task" | "event"; id: string; date: string | null; title: string; type: string; grow_cycle_id: string | null; completed?: boolean; raw: any }[] = [];
-    if (filter !== "events") {
-      tasks.forEach((t) => all.push({ kind: "task", id: t.id, date: t.due_date, title: t.title, type: "task", grow_cycle_id: t.grow_cycle_id, completed: t.completed, raw: t }));
-    }
-    if (filter !== "tasks") {
-      events.forEach((e) => all.push({ kind: "event", id: e.id, date: e.date, title: e.title, type: e.type, grow_cycle_id: e.grow_cycle_id, raw: e }));
-    }
-    return all
+    return tasks
+      .map((t) => ({ id: t.id, date: t.due_date, title: t.title, grow_cycle_id: t.grow_cycle_id, completed: t.completed }))
       .filter((it) => {
         if (status === "all") return true;
-        if (it.kind === "event") return status === "upcoming";
         if (status === "completed") return it.completed;
         if (status === "upcoming") return !it.completed && (!it.date || !isBefore(new Date(it.date), today));
         return !it.completed && !!it.date && isBefore(new Date(it.date), today);
@@ -50,7 +41,7 @@ export default function TasksEventsPage() {
         if (!a.date) return 1; if (!b.date) return -1;
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
-  }, [tasks, events, filter, status, today]);
+  }, [tasks, status, today]);
 
   const create = () => {
     if (!form.title.trim()) return;
@@ -75,13 +66,6 @@ export default function TasksEventsPage() {
         </Button>
       </div>
 
-      <FilterBar<Filter>
-        ariaLabel="Item type filter"
-        options={["both", "tasks", "events"] as const}
-        value={filter}
-        onChange={setFilter}
-      />
-
       <FilterBar<Status>
         ariaLabel="Status filter"
         options={["all", "upcoming", "overdue", "completed"] as const}
@@ -95,16 +79,12 @@ export default function TasksEventsPage() {
         <div className="space-y-2">
           {items.map((it) => {
             const cycle = growCycles.find((c) => c.id === it.grow_cycle_id);
-            const overdue = it.kind === "task" && !it.completed && it.date && isBefore(new Date(it.date), today);
+            const overdue = !it.completed && it.date && isBefore(new Date(it.date), today);
             return (
-              <div key={`${it.kind}-${it.id}`} className="glass-card p-3 flex items-center gap-3">
-                {it.kind === "task" ? (
-                  <Checkbox checked={!!it.completed} onCheckedChange={() => toggleTask(it.id)} className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
-                ) : (
-                  <CalIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                )}
+              <div key={it.id} className="glass-card p-3 flex items-center gap-3">
+                <Checkbox checked={!!it.completed} onCheckedChange={() => toggleTask(it.id)} className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                 <div className="flex-1 min-w-0">
-                  {it.kind === "task" && it.title === "Log Parameters" && !it.completed ? (
+                  {it.title === "Log Parameters" && !it.completed ? (
                     <button
                       type="button"
                       onClick={() => setLogParams({ growId: it.grow_cycle_id, taskId: it.id })}
@@ -117,14 +97,14 @@ export default function TasksEventsPage() {
                   )}
                   <p className="mt-0.5 text-[12px] leading-tight text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
                     <span className={cn("capitalize", overdue && "text-destructive")}>
-                      {it.kind === "task" ? (it.completed ? "Completed" : overdue ? "Overdue" : "Upcoming") : "Upcoming"}
+                      {it.completed ? "Completed" : overdue ? "Overdue" : "Upcoming"}
                     </span>
                     {" • "}
-                    <span className="capitalize">{it.kind === "task" ? "Task" : it.type.replace(/_/g, " ")}</span>
+                    <span>Task</span>
                     {it.date && <>{" • "}<span>{format(new Date(it.date), "d MMM")}</span></>}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel({ kind: it.kind, id: it.id })}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel(it.id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -186,12 +166,12 @@ export default function TasksEventsPage() {
       <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this log entry?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
             <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmDel) { confirmDel.kind === "task" ? deleteTask(confirmDel.id) : deleteEvent(confirmDel.id); } setConfirmDel(null); }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (confirmDel) deleteTask(confirmDel); setConfirmDel(null); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
