@@ -198,15 +198,21 @@ export default function GrowCyclesPage() {
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Feed Schedule" helper="Optional. Can be set later.">
-                <Select value={form.feed_schedule_id} onValueChange={(v) => { if (v === ADD_NEW) { setSchedCreateOpen(true); } else setForm({ ...form, feed_schedule_id: v }); }}>
-                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select schedule" /></SelectTrigger>
-                  <SelectContent>
-                    {feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                    <SelectItem value={ADD_NEW}>+ Create New</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
+              {form.starting_stage !== "dry" && form.starting_stage !== "cure" ? (
+                <FormField label="Feed Schedule" helper="Optional. Can be set later.">
+                  <Select value={form.feed_schedule_id} onValueChange={(v) => { if (v === ADD_NEW) { setSchedCreateOpen(true); } else setForm({ ...form, feed_schedule_id: v }); }}>
+                    <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Select schedule" /></SelectTrigger>
+                    <SelectContent>
+                      {feedSchedules.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                      <SelectItem value={ADD_NEW}>+ Create New</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              ) : (
+                <FormField label="Feed Schedule" helper="Not applicable for dry/cure stages.">
+                  <div className="text-xs text-muted-foreground bg-muted/30 border border-border rounded-md px-3 py-2">N/A</div>
+                </FormField>
+              )}
             </div>
 
             <FormField

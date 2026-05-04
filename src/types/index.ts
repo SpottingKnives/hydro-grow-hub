@@ -67,6 +67,7 @@ export interface Environment {
   parameter_ids: string[];
   task_templates: EnvironmentTaskTemplate[];
   updated_at?: string;
+  reservoir_volume?: number;
 }
 
 export interface Strain {

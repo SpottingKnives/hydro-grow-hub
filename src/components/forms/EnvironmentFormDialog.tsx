@@ -16,6 +16,7 @@ const empty = {
   supported_stages: [] as GrowStage[],
   system_description: "",
   parameter_ids: [] as string[],
+  reservoir_volume: "",
 };
 
 interface Props {
@@ -43,6 +44,7 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
         supported_stages: initial.supported_stages,
         system_description: initial.system_description,
         parameter_ids: initial.parameter_ids.filter((id) => parameters.find((p) => p.id === id)?.active),
+        reservoir_volume: initial.reservoir_volume != null ? String(initial.reservoir_volume) : "",
         updated_at: initial.updated_at,
       });
     } else {
@@ -70,12 +72,16 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
 
   const save = () => {
     if (!form.name.trim()) return;
+    const needsReservoir = ["nursery","veg","stretch","stack","swell","ripen"].some((s) => form.supported_stages.includes(s as GrowStage));
+    const reservoir = parseFloat(form.reservoir_volume);
+    if (needsReservoir && (!form.reservoir_volume || isNaN(reservoir) || reservoir <= 0)) return;
     const base = {
       name: form.name.trim(),
       site_count: parseInt(form.site_count) || 1,
       supported_stages: form.supported_stages,
       system_description: form.system_description,
       parameter_ids: form.parameter_ids,
+      reservoir_volume: needsReservoir ? reservoir : undefined,
     };
     if (form.id) {
       updateEnvironment(form.id, base);
@@ -100,6 +106,11 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
             <FormField label="Site Count" htmlFor="env-sites" required helper="Number of plant sites this environment supports">
               <Input id="env-sites" type="number" min={1} value={form.site_count} onChange={(e) => setForm({ ...form, site_count: e.target.value })} className="bg-muted border-border" />
             </FormField>
+            {(["nursery","veg","stretch","stack","swell","ripen"] as GrowStage[]).some((s) => form.supported_stages.includes(s)) && (
+              <FormField label="Reservoir Volume (Liters)" htmlFor="env-reservoir" required helper="Used by the Feed Calculator to compute totals">
+                <Input id="env-reservoir" type="number" min={0.1} step="0.1" value={form.reservoir_volume} onChange={(e) => setForm({ ...form, reservoir_volume: e.target.value })} className="bg-muted border-border" />
+              </FormField>
+            )}
             <FormField label="System Description" htmlFor="env-desc" helper="Optional notes on lighting, medium, irrigation, etc.">
               <Textarea id="env-desc" value={form.system_description} onChange={(e) => setForm({ ...form, system_description: e.target.value })} className="bg-muted border-border" />
             </FormField>
@@ -135,14 +146,20 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
                 <Button variant="outline" onClick={createParam}>Add</Button>
               </div>
             </FormField>
-            <FormFooter
-              onSave={save}
-              onCancel={() => onOpenChange(false)}
-              onDelete={form.id ? () => setConfirmDelete(true) : undefined}
-              saveDisabled={!form.name.trim()}
-              saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")}
-              lastUpdated={form.id ? form.updated_at : undefined}
-            />
+            {(() => {
+              const needsReservoir = (["nursery","veg","stretch","stack","swell","ripen"] as GrowStage[]).some((s) => form.supported_stages.includes(s));
+              const reservoirOk = !needsReservoir || (!!form.reservoir_volume && parseFloat(form.reservoir_volume) > 0);
+              return (
+                <FormFooter
+                  onSave={save}
+                  onCancel={() => onOpenChange(false)}
+                  onDelete={form.id ? () => setConfirmDelete(true) : undefined}
+                  saveDisabled={!form.name.trim() || !reservoirOk}
+                  saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")}
+                  lastUpdated={form.id ? form.updated_at : undefined}
+                />
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
