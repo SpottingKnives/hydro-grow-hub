@@ -146,14 +146,20 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
                 <Button variant="outline" onClick={createParam}>Add</Button>
               </div>
             </FormField>
-            <FormFooter
-              onSave={save}
-              onCancel={() => onOpenChange(false)}
-              onDelete={form.id ? () => setConfirmDelete(true) : undefined}
-              saveDisabled={!form.name.trim()}
-              saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")}
-              lastUpdated={form.id ? form.updated_at : undefined}
-            />
+            {(() => {
+              const needsReservoir = (["nursery","veg","stretch","stack","swell","ripen"] as GrowStage[]).some((s) => form.supported_stages.includes(s));
+              const reservoirOk = !needsReservoir || (!!form.reservoir_volume && parseFloat(form.reservoir_volume) > 0);
+              return (
+                <FormFooter
+                  onSave={save}
+                  onCancel={() => onOpenChange(false)}
+                  onDelete={form.id ? () => setConfirmDelete(true) : undefined}
+                  saveDisabled={!form.name.trim() || !reservoirOk}
+                  saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")}
+                  lastUpdated={form.id ? form.updated_at : undefined}
+                />
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
