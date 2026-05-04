@@ -18,6 +18,7 @@ import { FormFooter } from "@/components/forms/FormFooter";
 import { STAGES, type GrowStage, type GrowStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
+import { FeedCalculatorDialog } from "@/components/FeedCalculatorDialog";
 
 const ADD_NEW = "__add_new__";
 
@@ -33,6 +34,7 @@ export default function GrowCycleDetailPage() {
   const [pendingStage, setPendingStage] = useState<GrowStage | null>(null);
   const [confirmEnvId, setConfirmEnvId] = useState<string | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
   const [envCreateOpen, setEnvCreateOpen] = useState(false);
   const [strainCreateOpen, setStrainCreateOpen] = useState(false);
 
@@ -111,6 +113,7 @@ export default function GrowCycleDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={cycle.status} />
+            <Button size="sm" variant="outline" onClick={() => setCalcOpen(true)}>Feed Calculator</Button>
             <Select value={cycle.status} onValueChange={(v) => updateGrowCycle(cycle.id, { status: v as GrowStatus })}>
               <SelectTrigger className="w-32 bg-muted border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -410,6 +413,7 @@ export default function GrowCycleDetailPage() {
       </AlertDialog>
 
       <LogParametersDialog open={logOpen} onOpenChange={setLogOpen} growCycleId={cycle.id} />
+      <FeedCalculatorDialog open={calcOpen} onOpenChange={setCalcOpen} growCycleId={cycle.id} />
 
       <EnvironmentFormDialog open={envCreateOpen} onOpenChange={setEnvCreateOpen} defaultStages={[cycle.current_stage]} onCreated={(id) => setTimeout(() => tryEnvChange(id), 0)} />
       <StrainFormDialog open={strainCreateOpen} onOpenChange={setStrainCreateOpen} onCreated={(id) => setPickStrainId(id)} />
