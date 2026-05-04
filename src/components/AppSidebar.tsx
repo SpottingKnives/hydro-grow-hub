@@ -1,4 +1,4 @@
-import { Home, Beaker, Leaf, Sprout, ListChecks } from "lucide-react";
+import { Home, Beaker, Leaf, Sprout, ListChecks, ScrollText } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 
@@ -9,6 +9,7 @@ const mainItems: Item[] = [
   { title: "Environments", url: "/environments", icon: Leaf },
   { title: "Grow Cycles", url: "/grows", icon: Sprout },
   { title: "Tasks & Events", url: "/tasks", icon: ListChecks },
+  { title: "Logs", url: "/logs", icon: ScrollText },
 ];
 
 export function AppSidebar() {

@@ -10,6 +10,7 @@ import GrowCycleDetailPage from "@/pages/GrowCycleDetailPage";
 import FeedSchedulesPage from "@/pages/FeedSchedulesPage";
 import EnvironmentsPage from "@/pages/EnvironmentsPage";
 import TasksEventsPage from "@/pages/TasksEventsPage";
+import LogsPage from "@/pages/LogsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/grows" element={<GrowCyclesPage />} />
             <Route path="/grows/:id" element={<GrowCycleDetailPage />} />
             <Route path="/tasks" element={<TasksEventsPage />} />
+            <Route path="/logs" element={<LogsPage />} />
             <Route path="/nutrients" element={<Navigate to="/feeds" replace />} />
             <Route path="/parameters" element={<Navigate to="/environments" replace />} />
             <Route path="/strains" element={<Navigate to="/grows" replace />} />

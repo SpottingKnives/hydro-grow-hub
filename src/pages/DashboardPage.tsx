@@ -9,17 +9,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { LogParametersDialog } from "@/components/LogParametersDialog";
 
 export default function DashboardPage() {
-  const { growCycles, events, tasks, environments, clearAllData } = useStore();
+  const { growCycles, tasks, environments, clearAllData } = useStore();
   const [confirmClear, setConfirmClear] = useState(false);
   const [logParams, setLogParams] = useState<{ growId: string | null; taskId: string } | null>(null);
 
   const today = startOfDay(new Date());
   const weekAhead = addDays(today, 7);
 
-  const upcoming = [
-    ...tasks.filter((t) => t.due_date && !t.completed).map((t) => ({ kind: "task" as const, id: t.id, title: t.title, date: t.due_date as string, type: "task", grow_cycle_id: t.grow_cycle_id })),
-    ...events.map((e) => ({ kind: "event" as const, id: e.id, title: e.title, date: e.date, type: e.type, grow_cycle_id: e.grow_cycle_id })),
-  ]
+  const upcoming = tasks
+    .filter((t) => t.due_date && !t.completed)
+    .map((t) => ({ kind: "task" as const, id: t.id, title: t.title, date: t.due_date as string, type: "task", grow_cycle_id: t.grow_cycle_id }))
     .filter((it) => {
       const d = new Date(it.date);
       return !isBefore(d, today) && !isAfter(d, weekAhead);
