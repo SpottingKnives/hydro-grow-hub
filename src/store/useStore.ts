@@ -49,7 +49,7 @@ interface AppState {
   addFeedSchedule: (schedule: FeedSchedule) => void; updateFeedSchedule: (id: string, updates: Partial<FeedSchedule>) => void; deleteFeedSchedule: (id: string) => void; reorderFeedScheduleRow: (scheduleId: string, rowId: string, direction: 'up' | 'down') => void; addScheduleRow: (scheduleId: string, nutrient: Nutrient) => void;
   addNutrient: (nutrient: Nutrient) => void; updateNutrient: (id: string, updates: Partial<Nutrient>) => void; deleteNutrient: (id: string) => void;
   addTask: (task: GrowTask) => void; updateTask: (id: string, updates: Partial<GrowTask>) => void; deleteTask: (id: string) => void; toggleTask: (id: string) => void;
-  addEvent: (event: GrowEvent) => void; deleteEvent: (id: string) => void; addParameterLog: (log: ParameterLog) => void; addFeedLog: (log: FeedLog) => void;
+  addEvent: (event: GrowEvent) => void; deleteEvent: (id: string) => void; addParameterLog: (log: ParameterLog) => void; deleteParameterLog: (id: string) => void; addFeedLog: (log: FeedLog) => void; deleteFeedLog: (id: string) => void;
   addStrain: (strain: Strain) => void; updateStrain: (id: string, updates: Partial<Strain>) => void; deleteStrain: (id: string) => void;
   clearAllData: () => void;
 }
@@ -145,7 +145,7 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   updateNutrient: (nid, updates) => set((s) => { const nutrients = s.nutrients.map((n) => n.id === nid ? { ...n, ...updates, unit: updates.form ? unit(updates.form) : n.unit, type: updates.form ?? n.type, updated_at: now() } : n); const updated = nutrients.find((n) => n.id === nid); return { nutrients, feedSchedules: updated ? s.feedSchedules.map((f) => ({ ...f, rows: f.rows.map((r) => r.nutrient_id === nid ? { ...r, nutrient_name: updated.name, nutrient_type: updated.form, category: updated.category } : r) })) : s.feedSchedules }; }),
   deleteNutrient: (nid) => set((s) => ({ nutrients: s.nutrients.filter((n) => n.id !== nid), feedSchedules: s.feedSchedules.map((f) => ({ ...f, rows: f.rows.filter((r) => r.nutrient_id !== nid).map((r, i) => ({ ...r, order_index: i })) })) })),
 
-  addTask: (task) => set((s) => ({ tasks: [...s.tasks, task], events: [...s.events, mkEvent(task.grow_cycle_id, 'note', `Task created: ${task.title}`)] })),
+  addTask: (task) => set((s) => ({ tasks: [...s.tasks, task] })),
   updateTask: (tid, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === tid ? { ...t, ...updates, completed: updates.status ? updates.status === 'completed' : updates.completed ?? t.completed } : t) })),
   deleteTask: (tid) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== tid) })),
   toggleTask: (tid) => set((s) => {
@@ -178,10 +178,12 @@ export const useStore = create<AppState>()(persist((set, get) => ({
       events: [...s.events, mkEvent(log.grow_cycle_id, 'note', 'Parameters Logged', cycle ? cycle.name : '')],
     };
   }),
+  deleteParameterLog: (lid) => set((s) => ({ parameterLogs: s.parameterLogs.filter((l) => l.id !== lid) })),
   addFeedLog: (log) => set((s) => ({
     feedLogs: [...s.feedLogs, log],
     events: [...s.events, mkEvent(log.grow_cycle_id, 'feed', `Feed logged${log.ec_measured != null ? ` (EC: ${log.ec_measured})` : ''}`, `${log.liters || log.water_volume}L`)],
   })),
+  deleteFeedLog: (lid) => set((s) => ({ feedLogs: s.feedLogs.filter((l) => l.id !== lid) })),
   addStrain: (strain) => set((s) => ({ strains: [...s.strains, { ...strain, active: strain.active ?? true, updated_at: now() }] })),
   updateStrain: (sid, updates) => set((s) => ({ strains: s.strains.map((st) => st.id === sid ? { ...st, ...updates, updated_at: now() } : st) })),
   deleteStrain: (sid) => set((s) => ({ strains: s.strains.filter((st) => st.id !== sid) })),
