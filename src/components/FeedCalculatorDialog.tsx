@@ -8,14 +8,16 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   growCycleId: string;
+  /** Optional override for reservoir volume in liters (e.g. partial refill). */
+  volumeOverride?: number;
 }
 
-export function FeedCalculatorDialog({ open, onOpenChange, growCycleId }: Props) {
+export function FeedCalculatorDialog({ open, onOpenChange, growCycleId, volumeOverride }: Props) {
   const { growCycles, environments, feedSchedules, addFeedLog } = useStore();
   const cycle = growCycles.find((c) => c.id === growCycleId);
   const env = environments.find((e) => e.id === cycle?.environment_id);
   const schedule = feedSchedules.find((f) => f.id === cycle?.feed_schedule_id);
-  const reservoir = env?.reservoir_volume ?? 0;
+  const reservoir = volumeOverride ?? env?.reservoir_volume ?? 0;
 
   const stage: GrowStage | null = useMemo(() => {
     if (!cycle) return null;
