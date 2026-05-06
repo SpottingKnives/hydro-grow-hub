@@ -72,7 +72,7 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
 
   const save = () => {
     if (!form.name.trim()) return;
-    const needsReservoir = ["nursery","veg","stretch","stack","swell","ripen"].some((s) => form.supported_stages.includes(s as GrowStage));
+    const needsReservoir = ["nursery","veg","flower","stretch","stack","swell","ripen"].some((s) => form.supported_stages.includes(s as GrowStage));
     const reservoir = parseFloat(form.reservoir_volume);
     if (needsReservoir && (!form.reservoir_volume || isNaN(reservoir) || reservoir <= 0)) return;
     const base = {
@@ -106,7 +106,7 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
             <FormField label="Site Count" htmlFor="env-sites" required helper="Number of plant sites this environment supports">
               <Input id="env-sites" type="number" min={1} value={form.site_count} onChange={(e) => setForm({ ...form, site_count: e.target.value })} className="bg-muted border-border" />
             </FormField>
-            {(["nursery","veg","stretch","stack","swell","ripen"] as GrowStage[]).some((s) => form.supported_stages.includes(s)) && (
+            {(["nursery","veg","flower","stretch","stack","swell","ripen"] as unknown as GrowStage[]).some((s) => form.supported_stages.includes(s as GrowStage)) && (
               <FormField label="Reservoir Volume (Liters)" htmlFor="env-reservoir" required helper="Used by the Feed Calculator to compute totals">
                 <Input id="env-reservoir" type="number" min={0.1} step="0.1" value={form.reservoir_volume} onChange={(e) => setForm({ ...form, reservoir_volume: e.target.value })} className="bg-muted border-border" />
               </FormField>
@@ -147,7 +147,7 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
               </div>
             </FormField>
             {(() => {
-              const needsReservoir = (["nursery","veg","stretch","stack","swell","ripen"] as GrowStage[]).some((s) => form.supported_stages.includes(s));
+              const needsReservoir = (["nursery","veg","flower","stretch","stack","swell","ripen"] as unknown as GrowStage[]).some((s) => form.supported_stages.includes(s as GrowStage));
               const reservoirOk = !needsReservoir || (!!form.reservoir_volume && parseFloat(form.reservoir_volume) > 0);
               return (
                 <FormFooter

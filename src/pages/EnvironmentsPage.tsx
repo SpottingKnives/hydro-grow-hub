@@ -1,88 +1,25 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { LibraryRow } from "@/components/LibraryRow";
 import { Badge } from "@/components/ui/badge";
-import { FormField } from "@/components/forms/FormField";
-import { FormFooter } from "@/components/forms/FormFooter";
-import { STAGE_GROUPS, type Environment, type GrowStage } from "@/types";
+import { type Environment } from "@/types";
 import { ParametersSection } from "@/components/ParametersSection";
-import { cn } from "@/lib/utils";
-
-const empty = {
-  name: "",
-  site_count: "",
-  supported_stages: [] as GrowStage[],
-  system_description: "",
-  parameter_ids: [] as string[],
-};
+import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog";
 
 export default function EnvironmentsPage() {
-  const { environments, parameters, addEnvironment, updateEnvironment, deleteEnvironment, addParameter } = useStore();
+  const { environments, parameters, deleteEnvironment } = useStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
-  const [newParam, setNewParam] = useState({ name: "", unit: "" });
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState<Environment | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
 
   const openForm = (env?: Environment) => {
-    setForm(env ? {
-      id: env.id,
-      name: env.name,
-      site_count: String(env.site_count),
-      supported_stages: env.supported_stages,
-      system_description: env.system_description,
-      parameter_ids: env.parameter_ids.filter((id) => parameters.find((p) => p.id === id)?.active),
-      updated_at: env.updated_at,
-    } : empty);
+    setEditing(env ?? null);
     setOpen(true);
-  };
-
-  const toggleStageGroup = (stages: GrowStage[]) =>
-    setForm((p) => {
-      const all = stages.every((s) => p.supported_stages.includes(s));
-      return {
-        ...p,
-        supported_stages: all
-          ? p.supported_stages.filter((s) => !stages.includes(s))
-          : Array.from(new Set([...p.supported_stages, ...stages])),
-      };
-    });
-
-  const toggleParameter = (pid: string) =>
-    setForm((p) => ({
-      ...p,
-      parameter_ids: p.parameter_ids.includes(pid)
-        ? p.parameter_ids.filter((id) => id !== pid)
-        : [...p.parameter_ids, pid],
-    }));
-
-  const createParam = () => {
-    if (!newParam.name.trim()) return;
-    const p = { id: crypto.randomUUID(), name: newParam.name.trim(), unit: newParam.unit.trim(), active: true };
-    addParameter(p);
-    setForm((f) => ({ ...f, parameter_ids: [...f.parameter_ids, p.id] }));
-    setNewParam({ name: "", unit: "" });
-  };
-
-  const save = () => {
-    if (!form.name.trim()) return;
-    const base = {
-      name: form.name.trim(),
-      site_count: parseInt(form.site_count) || 1,
-      supported_stages: form.supported_stages,
-      system_description: form.system_description,
-      parameter_ids: form.parameter_ids,
-    };
-    if (form.id) updateEnvironment(form.id, base);
-    else addEnvironment({ id: crypto.randomUUID(), ...base, task_templates: [] });
-    setOpen(false);
   };
 
   return (
@@ -125,99 +62,7 @@ export default function EnvironmentsPage() {
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{form.id ? "Edit Environment" : "New Environment"}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-2">
-            <FormField label="Environment Name" htmlFor="env-name" required>
-              <Input id="env-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-
-            <FormField label="Site Count" htmlFor="env-sites" required helper="Number of plant sites this environment supports">
-              <Input id="env-sites" type="number" min={1} value={form.site_count} onChange={(e) => setForm({ ...form, site_count: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-
-            <FormField label="System Description" htmlFor="env-desc" helper="Optional notes on lighting, medium, irrigation, etc.">
-              <Textarea id="env-desc" value={form.system_description} onChange={(e) => setForm({ ...form, system_description: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-
-            <FormField label="Supported Stages" helper="Selecting Flower includes all 4 flower sub-stages">
-              <div className="flex flex-wrap gap-2">
-                {STAGE_GROUPS.map((group) => {
-                  const active = group.stages.every((s) => form.supported_stages.includes(s));
-                  return (
-                    <button
-                      key={group.label}
-                      type="button"
-                      onClick={() => toggleStageGroup(group.stages)}
-                      className={cn(
-                        "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
-                        active
-                          ? "bg-primary/20 text-primary border-primary/30"
-                          : "bg-muted text-muted-foreground border-border hover:border-primary/30",
-                      )}
-                    >
-                      {group.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </FormField>
-
-            <FormField label="Parameters" helper="Tracked metrics for this environment. Manage all parameters from the Parameters page.">
-              <div className="flex flex-wrap gap-2">
-                {parameters.filter((p) => p.active).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => toggleParameter(p.id)}
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
-                      form.parameter_ids.includes(p.id)
-                        ? "bg-primary/20 text-primary border-primary/30"
-                        : "bg-muted text-muted-foreground border-border hover:border-primary/30",
-                    )}
-                  >
-                    {p.name} {p.unit && `(${p.unit})`}
-                  </button>
-                ))}
-              </div>
-            </FormField>
-
-            <FormField label="Quick Add Parameter" helper="Create a new parameter and add it to this environment">
-              <div className="grid grid-cols-[1fr_96px_auto] gap-2">
-                <Input placeholder="Name (e.g. CO₂)" value={newParam.name} onChange={(e) => setNewParam({ ...newParam, name: e.target.value })} className="bg-muted border-border" />
-                <Input placeholder="Unit" value={newParam.unit} onChange={(e) => setNewParam({ ...newParam, unit: e.target.value })} className="bg-muted border-border" />
-                <Button variant="outline" onClick={createParam}>Add</Button>
-              </div>
-            </FormField>
-
-            <FormFooter
-              onSave={save}
-              onCancel={() => setOpen(false)}
-              onDelete={form.id ? () => setConfirmDelete(true) : undefined}
-              saveDisabled={!form.name.trim()}
-              lastUpdated={form.id ? form.updated_at : undefined}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete environment?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (form.id) deleteEnvironment(form.id); setConfirmDelete(false); setOpen(false); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <EnvironmentFormDialog open={open} onOpenChange={setOpen} initial={editing} />
 
       <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
         <AlertDialogContent>
