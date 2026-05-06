@@ -9,7 +9,7 @@ import { LibraryRow } from "@/components/LibraryRow";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { NutrientsSection } from "@/components/NutrientsSection";
-import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type GrowStage, type Nutrient, type NutrientCategory } from "@/types";
+import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedule, type GrowStage, type NutrientCategory } from "@/types";
 import { useState } from "react";
 import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
