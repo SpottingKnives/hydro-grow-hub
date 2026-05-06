@@ -97,30 +97,19 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-card border-border max-w-2xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-2xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader><DialogTitle>{form.id ? "Edit Environment" : "New Environment"}</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-3 mt-2">
             <FormField label="Environment Name" htmlFor="env-name" required>
               <Input id="env-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-muted border-border" />
             </FormField>
-            <FormField label="Site Count" htmlFor="env-sites" required helper="Number of plant sites this environment supports">
-              <Input id="env-sites" type="number" min={1} value={form.site_count} onChange={(e) => setForm({ ...form, site_count: e.target.value })} className="bg-muted border-border" />
-            </FormField>
-            {(["nursery","veg","flower","stretch","stack","swell","ripen"] as unknown as GrowStage[]).some((s) => form.supported_stages.includes(s as GrowStage)) && (
-              <FormField label="Reservoir Volume (Liters)" htmlFor="env-reservoir" required helper="Used by the Feed Calculator to compute totals">
-                <Input id="env-reservoir" type="number" min={0.1} step="0.1" value={form.reservoir_volume} onChange={(e) => setForm({ ...form, reservoir_volume: e.target.value })} className="bg-muted border-border" />
-              </FormField>
-            )}
-            <FormField label="System Description" htmlFor="env-desc" helper="Optional notes on lighting, medium, irrigation, etc.">
-              <Textarea id="env-desc" value={form.system_description} onChange={(e) => setForm({ ...form, system_description: e.target.value })} className="bg-muted border-border" />
-            </FormField>
             <FormField label="Supported Stages" helper="Selecting Flower includes all 4 flower sub-stages">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {STAGE_GROUPS.map((group) => {
                   const active = group.stages.every((s) => form.supported_stages.includes(s));
                   return (
                     <button key={group.label} type="button" onClick={() => toggleStageGroup(group.stages)}
-                      className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                      className={cn("px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
                         active ? "bg-primary/20 text-primary border-primary/30" : "bg-muted text-muted-foreground border-border hover:border-primary/30")}>
                       {group.label}
                     </button>
@@ -128,11 +117,24 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
                 })}
               </div>
             </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Site Count" htmlFor="env-sites" required helper="Plant sites supported">
+                <Input id="env-sites" type="number" min={1} value={form.site_count} onChange={(e) => setForm({ ...form, site_count: e.target.value })} className="bg-muted border-border" />
+              </FormField>
+            {(["nursery","veg","flower","stretch","stack","swell","ripen"] as unknown as GrowStage[]).some((s) => form.supported_stages.includes(s as GrowStage)) && (
+              <FormField label="Reservoir Volume (L)" htmlFor="env-reservoir" required helper="Used by the Feed Calculator">
+                <Input id="env-reservoir" type="number" min={0.1} step="0.1" value={form.reservoir_volume} onChange={(e) => setForm({ ...form, reservoir_volume: e.target.value })} className="bg-muted border-border" />
+              </FormField>
+            )}
+            </div>
+            <FormField label="System Description" htmlFor="env-desc" helper="Optional notes on lighting, medium, irrigation, etc.">
+              <Textarea id="env-desc" value={form.system_description} onChange={(e) => setForm({ ...form, system_description: e.target.value })} className="bg-muted border-border" />
+            </FormField>
             <FormField label="Parameters" helper="Tracked metrics for this environment.">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {parameters.filter((p) => p.active).map((p) => (
                   <button key={p.id} type="button" onClick={() => toggleParameter(p.id)}
-                    className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                    className={cn("px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
                       form.parameter_ids.includes(p.id) ? "bg-primary/20 text-primary border-primary/30" : "bg-muted text-muted-foreground border-border hover:border-primary/30")}>
                     {p.name} {p.unit && `(${p.unit})`}
                   </button>
@@ -140,7 +142,7 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
               </div>
             </FormField>
             <FormField label="Quick Add Parameter" helper="Create a new parameter and add it to this environment">
-              <div className="grid grid-cols-[1fr_96px_auto] gap-2">
+              <div className="grid grid-cols-[1fr_72px_auto] gap-2">
                 <Input placeholder="Name (e.g. CO₂)" value={newParam.name} onChange={(e) => setNewParam({ ...newParam, name: e.target.value })} className="bg-muted border-border" />
                 <Input placeholder="Unit" value={newParam.unit} onChange={(e) => setNewParam({ ...newParam, unit: e.target.value })} className="bg-muted border-border" />
                 <Button variant="outline" onClick={createParam}>Add</Button>
