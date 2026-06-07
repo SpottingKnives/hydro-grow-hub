@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LibraryRow } from "@/components/LibraryRow";
 import { Badge } from "@/components/ui/badge";
 import { type Environment } from "@/types";
@@ -64,18 +64,15 @@ export default function EnvironmentsPage() {
 
       <EnvironmentFormDialog open={open} onOpenChange={setOpen} initial={editing} />
 
-      <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete environment?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmDeleteId) deleteEnvironment(confirmDeleteId); setConfirmDeleteId(null); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(o) => !o && setConfirmDeleteId(null)}
+        title="Delete environment?"
+        description="This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (confirmDeleteId) deleteEnvironment(confirmDeleteId); setConfirmDeleteId(null); }}
+      />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
         <DialogContent className="bg-card border-border max-w-2xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
