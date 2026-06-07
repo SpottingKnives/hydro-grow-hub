@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Plus, Trash2, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { StrainsSection } from "@/components/StrainsSection";
@@ -260,18 +261,15 @@ export default function GrowCyclesPage() {
       <EnvironmentFormDialog open={envCreateOpen} onOpenChange={setEnvCreateOpen} defaultStages={[form.starting_stage]} onCreated={(id) => setForm((f) => ({ ...f, environment_id: id }))} />
       <FeedScheduleFormDialog open={schedCreateOpen} onOpenChange={setSchedCreateOpen} onCreated={(id) => setForm((f) => ({ ...f, feed_schedule_id: id }))} />
 
-      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete grow cycle?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the grow cycle and all linked plants, tasks, events, and timeline entries. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmDelete) deleteGrowCycle(confirmDelete); setConfirmDelete(null); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(o) => !o && setConfirmDelete(null)}
+        title="Delete grow cycle?"
+        description="This will remove the grow cycle and all linked plants, tasks, events, and timeline entries. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (confirmDelete) deleteGrowCycle(confirmDelete); setConfirmDelete(null); }}
+      />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
         <DialogContent className="bg-card border-border max-w-3xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
