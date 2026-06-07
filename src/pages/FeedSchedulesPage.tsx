@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LibraryRow } from "@/components/LibraryRow";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
@@ -144,18 +144,15 @@ export default function FeedSchedulesPage() {
 
       <NutrientFormDialog open={nutrientCreateOpen} onOpenChange={setNutrientCreateOpen} defaultCategory={addRowFor?.category} defaultForm={addRowFor?.category === "additive" ? "liquid" : "dry"} onCreated={(n) => { if (addRowFor) { addScheduleRow(addRowFor.scheduleId, n); setAddRowFor(null); setPickedId(""); } }} />
 
-      <AlertDialog open={!!confirmDeleteRowId} onOpenChange={(o) => !o && setConfirmDeleteRowId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmDeleteRowId) deleteFeedSchedule(confirmDeleteRowId); setConfirmDeleteRowId(null); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmDeleteRowId}
+        onOpenChange={(o) => !o && setConfirmDeleteRowId(null)}
+        title="Delete schedule?"
+        description="This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (confirmDeleteRowId) deleteFeedSchedule(confirmDeleteRowId); setConfirmDeleteRowId(null); }}
+      />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
         <DialogContent className="bg-card border-border max-w-3xl w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto">
