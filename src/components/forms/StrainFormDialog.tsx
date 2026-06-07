@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { Strain } from "@/types";
 
 const ADD_NEW = "__add_new__";
@@ -96,18 +96,15 @@ export function StrainFormDialog({ open, onOpenChange, initial, onCreated, saveL
           </div>
         </DialogContent>
       </Dialog>
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete strain?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the strain. Existing plants linked to it will keep their snapshot data. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (form.id) { deleteStrain(form.id); } setConfirmDelete(false); onOpenChange(false); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete strain?"
+        description="This will permanently delete the strain. Existing plants linked to it will keep their snapshot data. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (form.id) { deleteStrain(form.id); } setConfirmDelete(false); onOpenChange(false); }}
+      />
     </>
   );
 }

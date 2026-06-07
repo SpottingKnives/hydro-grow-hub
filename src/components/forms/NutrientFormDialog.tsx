@@ -3,7 +3,7 @@ import { useStore } from "@/store/useStore";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory, type NutrientType } from "@/types";
@@ -74,18 +74,15 @@ export function NutrientFormDialog({ open, onOpenChange, initial, defaultCategor
           </div>
         </DialogContent>
       </Dialog>
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete item?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the item and remove it from all schedules. Historical logs remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (form.id) { deleteNutrient(form.id); } setConfirmDelete(false); onOpenChange(false); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete item?"
+        description="This will permanently delete the item and remove it from all schedules. Historical logs remain intact. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (form.id) { deleteNutrient(form.id); } setConfirmDelete(false); onOpenChange(false); }}
+      />
     </>
   );
 }

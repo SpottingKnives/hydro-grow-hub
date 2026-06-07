@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { STAGE_GROUPS, type Environment, type GrowStage } from "@/types";
@@ -165,18 +165,15 @@ export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStag
           </div>
         </DialogContent>
       </Dialog>
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete environment?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (form.id) deleteEnvironment(form.id); setConfirmDelete(false); onOpenChange(false); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete environment?"
+        description="This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (form.id) deleteEnvironment(form.id); setConfirmDelete(false); onOpenChange(false); }}
+      />
     </>
   );
 }
