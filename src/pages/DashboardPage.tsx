@@ -10,10 +10,10 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
 import { TaskFormDialog } from "@/components/TaskFormDialog";
 import { FeedCalculatorDialog } from "@/components/FeedCalculatorDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { STAGES, type GrowStage } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -200,18 +200,15 @@ export default function DashboardPage() {
         </Button>
       </section>
 
-      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear ALL app data?</AlertDialogTitle>
-            <AlertDialogDescription>This cannot be undone. All grow cycles, plants, environments, parameters, feed schedules, nutrients, tasks, events, and logs will be permanently removed.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { clearAllData(); setConfirmClear(false); }}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmClear}
+        onOpenChange={setConfirmClear}
+        title="Clear ALL app data?"
+        description="This cannot be undone. All grow cycles, plants, environments, parameters, feed schedules, nutrients, tasks, events, and logs will be permanently removed."
+        confirmLabel="Confirm"
+        destructive
+        onConfirm={() => { clearAllData(); setConfirmClear(false); }}
+      />
 
       <LogParametersDialog
         open={!!logParams}
@@ -245,29 +242,25 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!confirmStage} onOpenChange={(o) => !o && setConfirmStage(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Progress to next stage?</AlertDialogTitle>
-            <AlertDialogDescription>The grow will move to <span className="capitalize font-medium">{confirmStage?.next}</span>. This is logged in the timeline.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (!confirmStage) return;
-              const growId = confirmStage.growId;
-              const next = confirmStage.next;
-              changeStage(growId, next);
-              const cycle = growCycles.find((c) => c.id === growId);
-              const env = environments.find((e) => e.id === cycle?.environment_id);
-              setConfirmStage(null);
-              if (STAGES_NEED_FEED.includes(next) && env?.reservoir_volume) {
-                openRefill(growId, env.reservoir_volume);
-              }
-            }}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmStage}
+        onOpenChange={(o) => !o && setConfirmStage(null)}
+        title="Progress to next stage?"
+        description={<>The grow will move to <span className="capitalize font-medium">{confirmStage?.next}</span>. This is logged in the timeline.</>}
+        confirmLabel="Confirm"
+        onConfirm={() => {
+          if (!confirmStage) return;
+          const growId = confirmStage.growId;
+          const next = confirmStage.next;
+          changeStage(growId, next);
+          const cycle = growCycles.find((c) => c.id === growId);
+          const env = environments.find((e) => e.id === cycle?.environment_id);
+          setConfirmStage(null);
+          if (STAGES_NEED_FEED.includes(next) && env?.reservoir_volume) {
+            openRefill(growId, env.reservoir_volume);
+          }
+        }}
+      />
     </div>
   );
 }

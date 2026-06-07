@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import type { Strain } from "@/types";
 import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function StrainsSection() {
   const { strains, deleteStrain } = useStore();
@@ -43,18 +43,15 @@ export function StrainsSection() {
 
       <StrainFormDialog open={open} onOpenChange={setOpen} initial={editing} />
 
-      <AlertDialog open={!!confirmId} onOpenChange={(o) => !o && setConfirmId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete strain?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the strain. Existing plants linked to it will keep their snapshot data. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmId) deleteStrain(confirmId); setConfirmId(null); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Delete strain?"
+        description="This will permanently delete the strain. Existing plants linked to it will keep their snapshot data. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (confirmId) deleteStrain(confirmId); setConfirmId(null); }}
+      />
     </div>
   );
 }

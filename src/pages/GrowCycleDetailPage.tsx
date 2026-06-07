@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog";
 import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
@@ -381,36 +382,24 @@ export default function GrowCycleDetailPage() {
       </AlertDialog>
 
       {/* Confirm stage change on active grow */}
-      <AlertDialog open={!!pendingStage} onOpenChange={(o) => !o && setPendingStage(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Change stage?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This grow is active. Moving from <span className="capitalize text-foreground">{cycle.current_stage}</span> to <span className="capitalize text-foreground">{pendingStage}</span> will close the current stage and start a new one. Logs and history will reflect the change.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (pendingStage) changeStage(cycle.id, pendingStage); setPendingStage(null); }}>Change stage</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!pendingStage}
+        onOpenChange={(o) => !o && setPendingStage(null)}
+        title="Change stage?"
+        description={<>This grow is active. Moving from <span className="capitalize text-foreground">{cycle.current_stage}</span> to <span className="capitalize text-foreground">{pendingStage}</span> will close the current stage and start a new one. Logs and history will reflect the change.</>}
+        confirmLabel="Change stage"
+        onConfirm={() => { if (pendingStage) changeStage(cycle.id, pendingStage); setPendingStage(null); }}
+      />
 
       {/* Confirm environment change on active grow */}
-      <AlertDialog open={!!confirmEnvId} onOpenChange={(o) => !o && setConfirmEnvId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move environment?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This grow is active. Moving to <span className="text-foreground">{environments.find((e) => e.id === confirmEnvId)?.name}</span> will close the current environment timeline entry and start a new one.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmEnvId) moveGrowEnvironment(cycle.id, confirmEnvId); setConfirmEnvId(null); }}>Move</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmEnvId}
+        onOpenChange={(o) => !o && setConfirmEnvId(null)}
+        title="Move environment?"
+        description={<>This grow is active. Moving to <span className="text-foreground">{environments.find((e) => e.id === confirmEnvId)?.name}</span> will close the current environment timeline entry and start a new one.</>}
+        confirmLabel="Move"
+        onConfirm={() => { if (confirmEnvId) moveGrowEnvironment(cycle.id, confirmEnvId); setConfirmEnvId(null); }}
+      />
 
       <LogParametersDialog open={logOpen} onOpenChange={setLogOpen} growCycleId={cycle.id} />
       <FeedCalculatorDialog open={calcOpen} onOpenChange={setCalcOpen} growCycleId={cycle.id} />

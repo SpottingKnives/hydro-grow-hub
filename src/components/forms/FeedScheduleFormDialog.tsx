@@ -3,7 +3,7 @@ import { useStore } from "@/store/useStore";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import type { FeedSchedule } from "@/types";
@@ -58,18 +58,15 @@ export function FeedScheduleFormDialog({ open, onOpenChange, initial, onCreated,
           </div>
         </DialogContent>
       </Dialog>
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (form.id) deleteFeedSchedule(form.id); setConfirmDelete(false); onOpenChange(false); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete schedule?"
+        description="This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (form.id) deleteFeedSchedule(form.id); setConfirmDelete(false); onOpenChange(false); }}
+      />
     </>
   );
 }

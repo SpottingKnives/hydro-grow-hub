@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory } from "@/types";
 import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function NutrientsSection() {
   const { nutrients, deleteNutrient } = useStore();
@@ -56,18 +56,15 @@ export function NutrientsSection() {
 
       <NutrientFormDialog open={open} onOpenChange={setOpen} initial={editing} defaultCategory={defaultCat} />
 
-      <AlertDialog open={!!confirmId} onOpenChange={(o) => !o && setConfirmId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete item?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the item and remove it from all schedules. Historical logs remain intact. This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmId) deleteNutrient(confirmId); setConfirmId(null); }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Delete item?"
+        description="This will permanently delete the item and remove it from all schedules. Historical logs remain intact. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (confirmId) deleteNutrient(confirmId); setConfirmId(null); }}
+      />
     </div>
   );
 }

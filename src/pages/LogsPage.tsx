@@ -5,8 +5,8 @@ import { FilterBar } from "@/components/FilterBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, ScrollText } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { STAGES, type GrowStage } from "@/types";
 
 type LogKind = "all" | "parameters" | "tasks" | "events" | "feed";
@@ -165,18 +165,15 @@ export default function LogsPage() {
         </div>
       )}
 
-      <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this log entry?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!confirmDel}
+        onOpenChange={(o) => !o && setConfirmDel(null)}
+        title="Delete this log entry?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
