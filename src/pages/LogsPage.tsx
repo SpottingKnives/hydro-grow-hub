@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trash2, ScrollText } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { STAGES, type GrowStage } from "@/types";
+import { undoableDelete } from "@/lib/undoToast";
 
 type LogKind = "all" | "parameters" | "tasks" | "events" | "feed";
 
@@ -85,9 +86,14 @@ export default function LogsPage() {
 
   const confirmDelete = () => {
     if (!confirmDel) return;
-    if (confirmDel.source === "parameter") deleteParameterLog(confirmDel.id);
-    else if (confirmDel.source === "feed") deleteFeedLog(confirmDel.id);
-    else deleteEvent(confirmDel.id);
+    const entry = confirmDel;
+    if (entry.source === "parameter") {
+      undoableDelete({ label: "Log entry deleted", slices: ["parameterLogs"], perform: () => deleteParameterLog(entry.id) });
+    } else if (entry.source === "feed") {
+      undoableDelete({ label: "Log entry deleted", slices: ["feedLogs"], perform: () => deleteFeedLog(entry.id) });
+    } else {
+      undoableDelete({ label: "Log entry deleted", slices: ["events"], perform: () => deleteEvent(entry.id) });
+    }
     setConfirmDel(null);
   };
 
@@ -153,7 +159,7 @@ export default function LogsPage() {
                         </p>
                       </div>
                       <Badge variant="outline" className="text-[10px] capitalize shrink-0">{it.kind}</Badge>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel(it)}>
+                      <Button aria-label="Delete log entry" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel(it)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>

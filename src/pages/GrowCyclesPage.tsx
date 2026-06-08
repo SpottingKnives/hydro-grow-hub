@@ -17,6 +17,7 @@ import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog"
 import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
 import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { Link } from "react-router-dom";
+import { undoableDelete } from "@/lib/undoToast";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const ADD_NEW_STRAIN = "__add_new_strain__";
@@ -149,7 +150,7 @@ export default function GrowCyclesPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   <StageBadge stage={cycle.current_stage} />
                   <StatusBadge status={cycle.status} />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); setConfirmDelete(cycle.id); }}><Trash2 className="w-4 h-4" /></Button>
+                  <Button aria-label="Delete grow cycle" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); setConfirmDelete(cycle.id); }}><Trash2 className="w-4 h-4" /></Button>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </Link>
@@ -267,7 +268,17 @@ export default function GrowCyclesPage() {
         description="This will remove the grow cycle and all linked plants, tasks, events, and timeline entries. This action cannot be undone."
         confirmLabel="Delete"
         destructive
-        onConfirm={() => { if (confirmDelete) deleteGrowCycle(confirmDelete); setConfirmDelete(null); }}
+        onConfirm={() => {
+          if (confirmDelete) {
+            const id = confirmDelete;
+            undoableDelete({
+              label: "Grow cycle deleted",
+              slices: ["growCycles", "plants", "stageHistory", "events", "tasks", "environmentTimeline", "growStrains"],
+              perform: () => deleteGrowCycle(id),
+            });
+          }
+          setConfirmDelete(null);
+        }}
       />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>

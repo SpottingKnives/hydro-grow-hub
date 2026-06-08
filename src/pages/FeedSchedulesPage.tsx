@@ -13,6 +13,7 @@ import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedu
 import { useState } from "react";
 import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
+import { undoableDelete } from "@/lib/undoToast";
 
 export default function FeedSchedulesPage() {
   const { feedSchedules, nutrients, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow, addScheduleRow } = useStore();
@@ -73,11 +74,11 @@ export default function FeedSchedulesPage() {
                 {schedule.notes && <p className="text-sm text-muted-foreground">{schedule.notes}</p>}
               </div>
               <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={() => openMeta(schedule)} title="Edit name & notes"><Pencil className="w-4 h-4" /></Button>
+                <Button aria-label="Edit feed schedule" variant="ghost" size="icon" onClick={() => openMeta(schedule)} title="Edit name & notes"><Pencil className="w-4 h-4" /></Button>
                 <Button variant="ghost" size="sm" onClick={() => { if (editingId === schedule.id && hasEmpty) return; setEditingId(editingId === schedule.id ? null : schedule.id); }} disabled={editingId === schedule.id && hasEmpty} title={hasEmpty ? "Fill all cells before closing" : ""}>
                   {editingId === schedule.id ? "Done" : "Edit Rows"}
                 </Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteRowId(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
+                <Button aria-label="Delete feed schedule" variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteRowId(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
               </div>
             </div>
 
@@ -151,7 +152,13 @@ export default function FeedSchedulesPage() {
         description="This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone."
         confirmLabel="Delete"
         destructive
-        onConfirm={() => { if (confirmDeleteRowId) deleteFeedSchedule(confirmDeleteRowId); setConfirmDeleteRowId(null); }}
+        onConfirm={() => {
+          if (confirmDeleteRowId) {
+            const id = confirmDeleteRowId;
+            undoableDelete({ label: "Feed schedule deleted", slices: ["feedSchedules"], perform: () => deleteFeedSchedule(id) });
+          }
+          setConfirmDeleteRowId(null);
+        }}
       />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
