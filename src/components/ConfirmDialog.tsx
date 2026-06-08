@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: ReactNode;
+  children?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   confirmDisabled?: boolean;
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
+  children,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   confirmDisabled,
@@ -39,11 +41,12 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent aria-describedby={description ? undefined : undefined}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description && <AlertDialogDescription asChild><div>{description}</div></AlertDialogDescription>}
         </AlertDialogHeader>
+        {children && <div className="text-sm">{children}</div>}
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
