@@ -150,7 +150,7 @@ export default function GrowCyclesPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   <StageBadge stage={cycle.current_stage} />
                   <StatusBadge status={cycle.status} />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); setConfirmDelete(cycle.id); }}><Trash2 className="w-4 h-4" /></Button>
+                  <Button aria-label="Delete grow cycle" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.preventDefault(); setConfirmDelete(cycle.id); }}><Trash2 className="w-4 h-4" /></Button>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </Link>
