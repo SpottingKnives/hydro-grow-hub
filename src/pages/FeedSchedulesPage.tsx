@@ -13,6 +13,7 @@ import { FEED_STAGES, CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type FeedSchedu
 import { useState } from "react";
 import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
+import { undoableDelete } from "@/lib/undoToast";
 
 export default function FeedSchedulesPage() {
   const { feedSchedules, nutrients, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow, addScheduleRow } = useStore();
@@ -151,7 +152,13 @@ export default function FeedSchedulesPage() {
         description="This removes the schedule. Historical feed logs that referenced it will remain intact. This action cannot be undone."
         confirmLabel="Delete"
         destructive
-        onConfirm={() => { if (confirmDeleteRowId) deleteFeedSchedule(confirmDeleteRowId); setConfirmDeleteRowId(null); }}
+        onConfirm={() => {
+          if (confirmDeleteRowId) {
+            const id = confirmDeleteRowId;
+            undoableDelete({ label: "Feed schedule deleted", slices: ["feedSchedules"], perform: () => deleteFeedSchedule(id) });
+          }
+          setConfirmDeleteRowId(null);
+        }}
       />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>

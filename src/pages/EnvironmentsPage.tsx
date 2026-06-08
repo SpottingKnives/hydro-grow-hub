@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { type Environment } from "@/types";
 import { ParametersSection } from "@/components/ParametersSection";
 import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog";
+import { undoableDelete } from "@/lib/undoToast";
 
 export default function EnvironmentsPage() {
   const { environments, parameters, deleteEnvironment } = useStore();
@@ -41,8 +42,8 @@ export default function EnvironmentsPage() {
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-semibold text-foreground">{env.name}</h3>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => openForm(env)}><Pencil className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteId(env.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button aria-label="Edit environment" variant="ghost" size="icon" onClick={() => openForm(env)}><Pencil className="w-4 h-4" /></Button>
+                  <Button aria-label="Delete environment" variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteId(env.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">{env.site_count} sites · {env.system_description || "No system description"}</p>
@@ -71,7 +72,13 @@ export default function EnvironmentsPage() {
         description="This will remove the environment. Historical timeline entries on grows will remain intact. This action cannot be undone."
         confirmLabel="Delete"
         destructive
-        onConfirm={() => { if (confirmDeleteId) deleteEnvironment(confirmDeleteId); setConfirmDeleteId(null); }}
+        onConfirm={() => {
+          if (confirmDeleteId) {
+            const id = confirmDeleteId;
+            undoableDelete({ label: "Environment deleted", slices: ["environments"], perform: () => deleteEnvironment(id) });
+          }
+          setConfirmDeleteId(null);
+        }}
       />
 
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>

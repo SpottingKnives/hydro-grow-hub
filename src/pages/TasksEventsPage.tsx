@@ -9,6 +9,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
 import { TaskFormDialog } from "@/components/TaskFormDialog";
 import { cn } from "@/lib/utils";
+import { undoableDelete } from "@/lib/undoToast";
 
 type Status = "all" | "upcoming" | "overdue" | "completed";
 
@@ -83,7 +84,7 @@ export default function TasksEventsPage() {
                     {it.date && <>{" • "}<span>{format(new Date(it.date), "d MMM")}</span></>}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel(it.id)}>
+                <Button aria-label="Delete task" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel(it.id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -101,7 +102,13 @@ export default function TasksEventsPage() {
         description="This action cannot be undone."
         confirmLabel="Delete"
         destructive
-        onConfirm={() => { if (confirmDel) deleteTask(confirmDel); setConfirmDel(null); }}
+        onConfirm={() => {
+          if (confirmDel) {
+            const id = confirmDel;
+            undoableDelete({ label: "Task deleted", slices: ["tasks"], perform: () => deleteTask(id) });
+          }
+          setConfirmDel(null);
+        }}
       />
 
       <LogParametersDialog
