@@ -7,7 +7,6 @@ import { StageBadge } from "@/components/StageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog";
@@ -353,33 +352,38 @@ export default function GrowCycleDetailPage() {
       </Dialog>
 
       {/* Downsize plant removal dialog */}
-      <AlertDialog open={!!pendingEnvId} onOpenChange={(o) => !o && setPendingEnvId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reduce plants to fit new environment</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p>Remove {Math.max(0, activePlants.length - (environments.find((e) => e.id === pendingEnvId)?.site_count ?? 0))} plants to match environment capacity.</p>
-                <div className="space-y-1 max-h-60 overflow-y-auto">
-                  {activePlants.map((p) => {
-                    const checked = removeForEnv.includes(p.id);
-                    return (
-                      <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" checked={checked} onChange={() => setRemoveForEnv((r) => r.includes(p.id) ? r.filter((x) => x !== p.id) : [...r, p.id])} />
-                        <span>{p.plant_tag} <span className="text-muted-foreground">({p.strain_name})</span></span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDownsize} disabled={removeForEnv.length < (activePlants.length - (environments.find((e) => e.id === pendingEnvId)?.site_count ?? 0))}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {(() => {
+        const capacity = environments.find((e) => e.id === pendingEnvId)?.site_count ?? 0;
+        const needToRemove = Math.max(0, activePlants.length - capacity);
+        return (
+          <ConfirmDialog
+            open={!!pendingEnvId}
+            onOpenChange={(o) => !o && setPendingEnvId(null)}
+            title="Reduce plants to fit new environment"
+            description={<p>Remove {needToRemove} plants to match environment capacity.</p>}
+            confirmLabel="Confirm"
+            confirmDisabled={removeForEnv.length < needToRemove}
+            onConfirm={confirmDownsize}
+          >
+            <div className="space-y-1 max-h-60 overflow-y-auto" role="group" aria-label="Plants to remove">
+              {activePlants.map((p) => {
+                const checked = removeForEnv.includes(p.id);
+                return (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      aria-label={`Remove ${p.plant_tag}`}
+                      onChange={() => setRemoveForEnv((r) => r.includes(p.id) ? r.filter((x) => x !== p.id) : [...r, p.id])}
+                    />
+                    <span>{p.plant_tag} <span className="text-muted-foreground">({p.strain_name})</span></span>
+                  </label>
+                );
+              })}
+            </div>
+          </ConfirmDialog>
+        );
+      })()}
 
       {/* Confirm stage change on active grow */}
       <ConfirmDialog
