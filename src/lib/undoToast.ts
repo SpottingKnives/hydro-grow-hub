@@ -9,8 +9,6 @@ import { useStore } from "@/store/useStore";
 type StoreState = ReturnType<typeof useStore.getState>;
 type Slice = keyof StoreState;
 
-const SLICE_ID = "id" as const;
-
 function diff<T extends { id: string }>(before: T[], after: T[]): T[] {
   const afterIds = new Set(after.map((x) => x.id));
   return before.filter((x) => !afterIds.has(x.id));
@@ -67,6 +65,4 @@ export function undoableDelete({ label, slices, perform, description }: Undoable
     },
   });
 
-  // touch SLICE_ID so tsc doesn't complain about unused const in strict mode
-  void SLICE_ID;
 }
