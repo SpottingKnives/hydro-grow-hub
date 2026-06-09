@@ -28,11 +28,53 @@ const row = (nutrient: Nutrient, vals: number[], order_index: number): FeedSched
   category: nutrient.category, order_index, amounts: Object.fromEntries(FEED_STAGES.map((s, i) => [s, vals[i] ?? 0])) as Record<GrowStage, number>,
 });
 
-const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [{
-  id: 'dtr-standard', name: 'DTR Standard', notes: 'Default reference schedule', created_at: '2024-01-01T00:00:00.000Z',
-  ec_targets: { veg: { min: 1.6, max: 1.8 }, stretch: { min: 2.0, max: 2.2 }, stack: { min: 1.6, max: 1.8 }, swell: { min: 1.4, max: 1.6 }, ripen: { min: 1.2, max: 1.4 } },
-  rows: DEFAULT_NUTRIENTS.map((n, i) => row(n, i === 0 ? [1.4, 1.5, 1.1, 0.9, 0.9] : i === 1 ? [1.7, 1.9, 1.3, 1.1, 1.0] : i === 2 ? [0.9, 1.1, 0.7, 0.6, 0.5] : i === 5 ? [0.0035, 0.0035, 0.0035, 0.0035, 0.0035] : [0.1, 0.1, 0.1, 0.1, 0.1], i)),
-}];
+// Front Row Ag DTR feed charts (metric, g/L & ml/L) — sourced from FRA DTR Feed Chart v6.2
+// Stages map: veg → Veg/Moms, stretch → Wk1-2, stack → Wk3-5, swell → Wk6-8/9, ripen → Final 1-2 weeks
+const byId = (nid: string) => DEFAULT_NUTRIENTS.find((n) => n.id === nid)!;
+const buildRows = (recipe: Record<string, number[]>): FeedScheduleRow[] =>
+  Object.entries(recipe).map(([nid, vals], i) => row(byId(nid), vals, i));
+
+const DTR_STANDARD: FeedSchedule = {
+  id: 'dtr-standard-strength', name: 'DTR Standard Strength',
+  notes: 'Front Row Ag Direct-to-Reservoir, standard strength (metric).',
+  created_at: '2024-01-01T00:00:00.000Z',
+  ec_targets: {
+    veg:     { min: 2.5, max: 2.7 },
+    stretch: { min: 2.3, max: 2.5 },
+    stack:   { min: 2.1, max: 2.3 },
+    swell:   { min: 1.9, max: 2.1 },
+    ripen:   { min: 1.5, max: 1.7 },
+  },
+  rows: buildRows({
+    'part-a':       [1.4, 1.1, 0.9, 0.7, 0.5],
+    'part-b':       [0.9, 0.7, 0.6, 0.5, 0.5],
+    'bloom':        [0.0, 0.5, 0.6, 0.9, 0.7],
+    'front-row-si': [0.1, 0.1, 0.1, 0.1, 0.1],
+    'phoszyme':     [0.1, 0.1, 0.1, 0.1, 0.1],
+  }),
+};
+
+const DTR_HIGH: FeedSchedule = {
+  id: 'dtr-high-strength', name: 'DTR High Strength',
+  notes: 'Front Row Ag Direct-to-Reservoir, high strength (metric).',
+  created_at: '2024-01-01T00:00:01.000Z',
+  ec_targets: {
+    veg:     { min: 2.9, max: 3.1 },
+    stretch: { min: 2.9, max: 3.1 },
+    stack:   { min: 2.6, max: 2.8 },
+    swell:   { min: 2.3, max: 2.5 },
+    ripen:   { min: 1.7, max: 1.9 },
+  },
+  rows: buildRows({
+    'part-a':       [1.6, 1.4, 1.1, 0.9, 0.5],
+    'part-b':       [1.1, 0.9, 0.8, 0.6, 0.6],
+    'bloom':        [0.0, 0.6, 0.8, 1.0, 0.8],
+    'front-row-si': [0.1, 0.1, 0.1, 0.1, 0.1],
+    'phoszyme':     [0.1, 0.1, 0.1, 0.1, 0.1],
+  }),
+};
+
+const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [DTR_STANDARD, DTR_HIGH];
 
 const mkEvent = (grow_cycle_id: string | null, type: EventType, title: string, description = ''): GrowEvent => ({
   id: id(), grow_cycle_id: grow_cycle_id ?? '', type, title, description, date: now(),
@@ -193,11 +235,21 @@ export const useStore = create<AppState>()(persist((set, get) => ({
     strains: [], growStrains: [], plants: [], environmentTimeline: [], parameters: [],
   })),
 }), {
-  name: 'hydro-grow-os', version: 10,
+  name: 'hydro-grow-os', version: 11,
   migrate: (state: any) => ({
     ...state,
-    nutrients: (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry'), updated_at: n.updated_at ?? now() })),
-    feedSchedules: state?.feedSchedules?.length ? state.feedSchedules.map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', updated_at: f.updated_at ?? f.created_at ?? now(), ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) })) : DEFAULT_FEED_SCHEDULES,
+    nutrients: (() => {
+      const existing = (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry'), updated_at: n.updated_at ?? now() }));
+      const ids = new Set(existing.map((n: any) => n.id));
+      const missing = DEFAULT_NUTRIENTS.filter((n) => !ids.has(n.id));
+      return [...existing, ...missing];
+    })(),
+    feedSchedules: (() => {
+      const existing = (state?.feedSchedules ?? []).map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', updated_at: f.updated_at ?? f.created_at ?? now(), ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) }));
+      const ids = new Set(existing.map((f: any) => f.id));
+      const seeded = DEFAULT_FEED_SCHEDULES.filter((f) => !ids.has(f.id));
+      return [...seeded, ...existing];
+    })(),
     environments: (state?.environments ?? []).map((e: any) => ({ ...e, system_description: e.system_description ?? '', parameter_ids: e.parameter_ids ?? [], task_templates: [], updated_at: e.updated_at ?? now() })),
     strains: (state?.strains ?? []).map((st: any) => ({ id: st.id, name: st.name, breeder: st.breeder ?? st.breeder_name ?? '', veg_weeks: st.veg_weeks ?? Math.ceil((st.veg_days_est ?? 28) / 7), flower_weeks: st.flower_weeks ?? Math.ceil((st.flower_days_est ?? 56) / 7), traits: st.traits ?? [], notes: st.notes ?? '', active: st.active ?? true, updated_at: st.updated_at ?? now() })),
     parameters: (state?.parameters ?? [{ id: 'ph', name: 'pH', unit: 'pH' }, { id: 'ec', name: 'EC', unit: 'mS/cm' }]).map((p: any) => ({ ...p, active: p.active ?? true, updated_at: p.updated_at ?? now() })),
