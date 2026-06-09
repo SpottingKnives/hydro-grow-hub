@@ -19,4 +19,23 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
+  build: {
+    target: "es2020",
+    cssCodeSplit: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("react-router")) return "react-vendor";
+          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("scheduler")) return "react-vendor";
+          if (id.includes("@radix-ui")) return "radix";
+          if (id.includes("recharts") || id.includes("d3-")) return "charts";
+          if (id.includes("date-fns")) return "date";
+          if (id.includes("lucide-react")) return "icons";
+          if (id.includes("zustand")) return "state";
+        },
+      },
+    },
+  },
 }));
