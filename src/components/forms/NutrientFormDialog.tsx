@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

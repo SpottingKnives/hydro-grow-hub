@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import type { Strain } from "@/types";

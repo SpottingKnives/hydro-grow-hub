@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

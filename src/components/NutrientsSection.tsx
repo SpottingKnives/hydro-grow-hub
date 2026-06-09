@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory } from "@/types";

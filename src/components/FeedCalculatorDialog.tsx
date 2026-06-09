@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { FEED_STAGES, formUnit, formUnitShort, type GrowStage, type FeedLog } from "@/types";
 
 interface Props {

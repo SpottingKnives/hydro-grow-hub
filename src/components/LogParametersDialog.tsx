@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import type { ParameterLog } from "@/types";
 
 interface LogParametersDialogProps {
