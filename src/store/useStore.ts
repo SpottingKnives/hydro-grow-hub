@@ -238,7 +238,12 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   name: 'hydro-grow-os', version: 11,
   migrate: (state: any) => ({
     ...state,
-    nutrients: (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry'), updated_at: n.updated_at ?? now() })),
+    nutrients: (() => {
+      const existing = (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry'), updated_at: n.updated_at ?? now() }));
+      const ids = new Set(existing.map((n: any) => n.id));
+      const missing = DEFAULT_NUTRIENTS.filter((n) => !ids.has(n.id));
+      return [...existing, ...missing];
+    })(),
     feedSchedules: (() => {
       const existing = (state?.feedSchedules ?? []).map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', updated_at: f.updated_at ?? f.created_at ?? now(), ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) }));
       const ids = new Set(existing.map((f: any) => f.id));
