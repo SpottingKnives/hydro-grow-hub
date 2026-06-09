@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import { format } from "date-fns";
 import { FilterBar } from "@/components/FilterBar";
@@ -31,7 +32,13 @@ const KIND_LABELS: Record<Exclude<LogKind, "all">, string> = {
 };
 
 export default function LogsPage() {
-  const { parameterLogs, feedLogs, events, growCycles, environments, deleteParameterLog, deleteFeedLog, deleteEvent } = useStore();
+  const { parameterLogs, feedLogs, events, growCycles, environments, deleteParameterLog, deleteFeedLog, deleteEvent } = useStore(
+    useShallow((s) => ({
+      parameterLogs: s.parameterLogs, feedLogs: s.feedLogs, events: s.events,
+      growCycles: s.growCycles, environments: s.environments,
+      deleteParameterLog: s.deleteParameterLog, deleteFeedLog: s.deleteFeedLog, deleteEvent: s.deleteEvent,
+    }))
+  );
   const [kind, setKind] = useState<LogKind>("all");
   const [growId, setGrowId] = useState<string>("all");
   const [envId, setEnvId] = useState<string>("all");

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/useStore";
 import {
   format, isSameDay, startOfDay, startOfMonth, endOfMonth,
@@ -30,7 +31,12 @@ const nextStageOf = (s: GrowStage): GrowStage | null => {
 const STAGES_NEED_FEED: GrowStage[] = ["nursery","veg","stretch","stack","swell","ripen"];
 
 export default function DashboardPage() {
-  const { growCycles, tasks, events, environments, clearAllData, changeStage } = useStore();
+  const { growCycles, tasks, events, environments, clearAllData, changeStage } = useStore(
+    useShallow((s) => ({
+      growCycles: s.growCycles, tasks: s.tasks, events: s.events,
+      environments: s.environments, clearAllData: s.clearAllData, changeStage: s.changeStage,
+    }))
+  );
   const [confirmClear, setConfirmClear] = useState(false);
   const [logParams, setLogParams] = useState<{ growId: string | null; taskId: string } | null>(null);
   const [taskFor, setTaskFor] = useState<string | null>(null);
