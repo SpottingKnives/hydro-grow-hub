@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
@@ -12,7 +13,9 @@ import { EnvironmentFormDialog } from "@/components/forms/EnvironmentFormDialog"
 import { undoableDelete } from "@/lib/undoToast";
 
 export default function EnvironmentsPage() {
-  const { environments, parameters, deleteEnvironment } = useStore();
+  const { environments, parameters, deleteEnvironment } = useStore(
+    useShallow((s) => ({ environments: s.environments, parameters: s.parameters, deleteEnvironment: s.deleteEnvironment }))
+  );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Environment | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
