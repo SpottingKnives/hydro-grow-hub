@@ -235,11 +235,16 @@ export const useStore = create<AppState>()(persist((set, get) => ({
     strains: [], growStrains: [], plants: [], environmentTimeline: [], parameters: [],
   })),
 }), {
-  name: 'hydro-grow-os', version: 10,
+  name: 'hydro-grow-os', version: 11,
   migrate: (state: any) => ({
     ...state,
     nutrients: (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry'), updated_at: n.updated_at ?? now() })),
-    feedSchedules: state?.feedSchedules?.length ? state.feedSchedules.map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', updated_at: f.updated_at ?? f.created_at ?? now(), ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) })) : DEFAULT_FEED_SCHEDULES,
+    feedSchedules: (() => {
+      const existing = (state?.feedSchedules ?? []).map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', updated_at: f.updated_at ?? f.created_at ?? now(), ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) }));
+      const ids = new Set(existing.map((f: any) => f.id));
+      const seeded = DEFAULT_FEED_SCHEDULES.filter((f) => !ids.has(f.id));
+      return [...seeded, ...existing];
+    })(),
     environments: (state?.environments ?? []).map((e: any) => ({ ...e, system_description: e.system_description ?? '', parameter_ids: e.parameter_ids ?? [], task_templates: [], updated_at: e.updated_at ?? now() })),
     strains: (state?.strains ?? []).map((st: any) => ({ id: st.id, name: st.name, breeder: st.breeder ?? st.breeder_name ?? '', veg_weeks: st.veg_weeks ?? Math.ceil((st.veg_days_est ?? 28) / 7), flower_weeks: st.flower_weeks ?? Math.ceil((st.flower_days_est ?? 56) / 7), traits: st.traits ?? [], notes: st.notes ?? '', active: st.active ?? true, updated_at: st.updated_at ?? now() })),
     parameters: (state?.parameters ?? [{ id: 'ph', name: 'pH', unit: 'pH' }, { id: 'ec', name: 'EC', unit: 'mS/cm' }]).map((p: any) => ({ ...p, active: p.active ?? true, updated_at: p.updated_at ?? now() })),
