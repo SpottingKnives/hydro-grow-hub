@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,17 @@ const ADD_NEW = "__add_new__";
 export default function GrowCycleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, parameters, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore();
+  const { growCycles, stageHistory, environments, environmentTimeline, events, tasks, feedLogs, parameterLogs, parameters, plants, strains, changeStage, updateGrowCycle, moveGrowEnvironment, assignPlantToSlot, removePlant } = useStore(
+    useShallow((s) => ({
+      growCycles: s.growCycles, stageHistory: s.stageHistory, environments: s.environments,
+      environmentTimeline: s.environmentTimeline, events: s.events, tasks: s.tasks,
+      feedLogs: s.feedLogs, parameterLogs: s.parameterLogs, parameters: s.parameters,
+      plants: s.plants, strains: s.strains,
+      changeStage: s.changeStage, updateGrowCycle: s.updateGrowCycle,
+      moveGrowEnvironment: s.moveGrowEnvironment, assignPlantToSlot: s.assignPlantToSlot,
+      removePlant: s.removePlant,
+    }))
+  );
 
   const [slotDialog, setSlotDialog] = useState<number | null>(null);
   const [pickStrainId, setPickStrainId] = useState("");

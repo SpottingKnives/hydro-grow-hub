@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,7 +21,9 @@ interface Props {
 const empty = { title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" as Priority, repeat: "none" as TaskRepeat };
 
 export function TaskFormDialog({ open, onOpenChange, growCycleId, defaultDate, onCreated }: Props) {
-  const { growCycles, addTask } = useStore();
+  const { growCycles, addTask } = useStore(
+    useShallow((s) => ({ growCycles: s.growCycles, addTask: s.addTask }))
+  );
   const [form, setForm] = useState(empty);
 
   useEffect(() => {

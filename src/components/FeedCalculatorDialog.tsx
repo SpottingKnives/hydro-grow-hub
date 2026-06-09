@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { FEED_STAGES, formUnit, formUnitShort, type GrowStage, type FeedLog } from "@/types";
 
 interface Props {
@@ -13,7 +14,9 @@ interface Props {
 }
 
 export function FeedCalculatorDialog({ open, onOpenChange, growCycleId, volumeOverride }: Props) {
-  const { growCycles, environments, feedSchedules, addFeedLog } = useStore();
+  const { growCycles, environments, feedSchedules, addFeedLog } = useStore(
+    useShallow((s) => ({ growCycles: s.growCycles, environments: s.environments, feedSchedules: s.feedSchedules, addFeedLog: s.addFeedLog }))
+  );
   const cycle = growCycles.find((c) => c.id === growCycleId);
   const env = environments.find((e) => e.id === cycle?.environment_id);
   const schedule = feedSchedules.find((f) => f.id === cycle?.feed_schedule_id);

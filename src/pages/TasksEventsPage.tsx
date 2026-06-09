@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
@@ -14,7 +15,9 @@ import { undoableDelete } from "@/lib/undoToast";
 type Status = "all" | "upcoming" | "overdue" | "completed";
 
 export default function TasksEventsPage() {
-  const { tasks, growCycles, toggleTask, deleteTask } = useStore();
+  const { tasks, growCycles, toggleTask, deleteTask } = useStore(
+    useShallow((s) => ({ tasks: s.tasks, growCycles: s.growCycles, toggleTask: s.toggleTask, deleteTask: s.deleteTask }))
+  );
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("all");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);

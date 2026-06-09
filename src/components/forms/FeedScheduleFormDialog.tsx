@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +20,9 @@ interface Props {
 }
 
 export function FeedScheduleFormDialog({ open, onOpenChange, initial, onCreated, saveLabel }: Props) {
-  const { addFeedSchedule, updateFeedSchedule, deleteFeedSchedule } = useStore();
+  const { addFeedSchedule, updateFeedSchedule, deleteFeedSchedule } = useStore(
+    useShallow((s) => ({ addFeedSchedule: s.addFeedSchedule, updateFeedSchedule: s.updateFeedSchedule, deleteFeedSchedule: s.deleteFeedSchedule }))
+  );
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmDelete, setConfirmDelete] = useState(false);
 

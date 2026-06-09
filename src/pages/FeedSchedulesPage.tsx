@@ -1,4 +1,5 @@
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,7 +17,13 @@ import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
 import { undoableDelete } from "@/lib/undoToast";
 
 export default function FeedSchedulesPage() {
-  const { feedSchedules, nutrients, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow, addScheduleRow } = useStore();
+  const { feedSchedules, nutrients, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow, addScheduleRow } = useStore(
+    useShallow((s) => ({
+      feedSchedules: s.feedSchedules, nutrients: s.nutrients,
+      updateFeedSchedule: s.updateFeedSchedule, deleteFeedSchedule: s.deleteFeedSchedule,
+      reorderFeedScheduleRow: s.reorderFeedScheduleRow, addScheduleRow: s.addScheduleRow,
+    }))
+  );
 
   const [metaOpen, setMetaOpen] = useState(false);
   const [metaInitial, setMetaInitial] = useState<FeedSchedule | null>(null);

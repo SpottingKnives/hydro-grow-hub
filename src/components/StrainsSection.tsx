@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import type { Strain } from "@/types";
@@ -7,7 +8,9 @@ import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function StrainsSection() {
-  const { strains, deleteStrain } = useStore();
+  const { strains, deleteStrain } = useStore(
+    useShallow((s) => ({ strains: s.strains, deleteStrain: s.deleteStrain }))
+  );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Strain | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);

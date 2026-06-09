@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +13,9 @@ import type { Parameter } from "@/types";
 const empty = { name: "", unit: "" };
 
 export function ParametersSection() {
-  const { parameters, addParameter, updateParameter, deleteParameter } = useStore();
+  const { parameters, addParameter, updateParameter, deleteParameter } = useStore(
+    useShallow((s) => ({ parameters: s.parameters, addParameter: s.addParameter, updateParameter: s.updateParameter, deleteParameter: s.deleteParameter }))
+  );
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmId, setConfirmId] = useState<string | null>(null);

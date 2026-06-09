@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +22,9 @@ interface Props {
 }
 
 export function NutrientFormDialog({ open, onOpenChange, initial, defaultCategory, defaultForm, onCreated, saveLabel }: Props) {
-  const { addNutrient, updateNutrient, deleteNutrient } = useStore();
+  const { addNutrient, updateNutrient, deleteNutrient } = useStore(
+    useShallow((s) => ({ addNutrient: s.addNutrient, updateNutrient: s.updateNutrient, deleteNutrient: s.deleteNutrient }))
+  );
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmDelete, setConfirmDelete] = useState(false);
 

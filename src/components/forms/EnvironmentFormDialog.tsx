@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,7 +30,9 @@ interface Props {
 }
 
 export function EnvironmentFormDialog({ open, onOpenChange, initial, defaultStages, onCreated, saveLabel }: Props) {
-  const { parameters, addEnvironment, updateEnvironment, deleteEnvironment, addParameter } = useStore();
+  const { parameters, addEnvironment, updateEnvironment, deleteEnvironment, addParameter } = useStore(
+    useShallow((s) => ({ parameters: s.parameters, addEnvironment: s.addEnvironment, updateEnvironment: s.updateEnvironment, deleteEnvironment: s.deleteEnvironment, addParameter: s.addParameter }))
+  );
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [newParam, setNewParam] = useState({ name: "", unit: "" });
   const [confirmDelete, setConfirmDelete] = useState(false);

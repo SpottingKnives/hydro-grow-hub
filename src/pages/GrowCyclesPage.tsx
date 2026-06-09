@@ -1,4 +1,5 @@
 import { useStore } from "@/store/useStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,7 +25,13 @@ const ADD_NEW_STRAIN = "__add_new_strain__";
 const ADD_NEW = "__add_new__";
 
 export default function GrowCyclesPage() {
-  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore();
+  const { growCycles, environments, feedSchedules, plants, strains, addGrowCycle, deleteGrowCycle, moveGrowEnvironment } = useStore(
+    useShallow((s) => ({
+      growCycles: s.growCycles, environments: s.environments, feedSchedules: s.feedSchedules,
+      plants: s.plants, strains: s.strains,
+      addGrowCycle: s.addGrowCycle, deleteGrowCycle: s.deleteGrowCycle, moveGrowEnvironment: s.moveGrowEnvironment,
+    }))
+  );
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
