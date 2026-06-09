@@ -22,7 +22,9 @@ interface Props {
 }
 
 export function StrainFormDialog({ open, onOpenChange, initial, onCreated, saveLabel }: Props) {
-  const { strains, addStrain, updateStrain, deleteStrain } = useStore();
+  const { strains, addStrain, updateStrain, deleteStrain } = useStore(
+    useShallow((s) => ({ strains: s.strains, addStrain: s.addStrain, updateStrain: s.updateStrain, deleteStrain: s.deleteStrain }))
+  );
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [addingBreeder, setAddingBreeder] = useState(false);
   const [newBreeder, setNewBreeder] = useState("");

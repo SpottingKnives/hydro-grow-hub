@@ -7,7 +7,9 @@ import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function StrainsSection() {
-  const { strains, deleteStrain } = useStore();
+  const { strains, deleteStrain } = useStore(
+    useShallow((s) => ({ strains: s.strains, deleteStrain: s.deleteStrain }))
+  );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Strain | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);

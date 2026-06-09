@@ -21,7 +21,9 @@ interface Props {
 }
 
 export function NutrientFormDialog({ open, onOpenChange, initial, defaultCategory, defaultForm, onCreated, saveLabel }: Props) {
-  const { addNutrient, updateNutrient, deleteNutrient } = useStore();
+  const { addNutrient, updateNutrient, deleteNutrient } = useStore(
+    useShallow((s) => ({ addNutrient: s.addNutrient, updateNutrient: s.updateNutrient, deleteNutrient: s.deleteNutrient }))
+  );
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmDelete, setConfirmDelete] = useState(false);
 

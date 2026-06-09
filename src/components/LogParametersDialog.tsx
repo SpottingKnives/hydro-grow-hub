@@ -16,7 +16,9 @@ interface LogParametersDialogProps {
 }
 
 export function LogParametersDialog({ open, onOpenChange, growCycleId, taskId }: LogParametersDialogProps) {
-  const { growCycles, environments, parameters, addParameterLog, toggleTask, tasks } = useStore();
+  const { growCycles, environments, parameters, addParameterLog, toggleTask, tasks } = useStore(
+    useShallow((s) => ({ growCycles: s.growCycles, environments: s.environments, parameters: s.parameters, addParameterLog: s.addParameterLog, toggleTask: s.toggleTask, tasks: s.tasks }))
+  );
 
   // If no growCycleId passed, let user pick one
   const [selectedGrow, setSelectedGrow] = useState<string>(growCycleId || "");

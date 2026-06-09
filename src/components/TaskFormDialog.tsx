@@ -20,7 +20,9 @@ interface Props {
 const empty = { title: "", description: "", grow_cycle_id: "", due_date: "", priority: "medium" as Priority, repeat: "none" as TaskRepeat };
 
 export function TaskFormDialog({ open, onOpenChange, growCycleId, defaultDate, onCreated }: Props) {
-  const { growCycles, addTask } = useStore();
+  const { growCycles, addTask } = useStore(
+    useShallow((s) => ({ growCycles: s.growCycles, addTask: s.addTask }))
+  );
   const [form, setForm] = useState(empty);
 
   useEffect(() => {

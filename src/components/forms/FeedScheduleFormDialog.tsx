@@ -19,7 +19,9 @@ interface Props {
 }
 
 export function FeedScheduleFormDialog({ open, onOpenChange, initial, onCreated, saveLabel }: Props) {
-  const { addFeedSchedule, updateFeedSchedule, deleteFeedSchedule } = useStore();
+  const { addFeedSchedule, updateFeedSchedule, deleteFeedSchedule } = useStore(
+    useShallow((s) => ({ addFeedSchedule: s.addFeedSchedule, updateFeedSchedule: s.updateFeedSchedule, deleteFeedSchedule: s.deleteFeedSchedule }))
+  );
   const [form, setForm] = useState<typeof empty & { id?: string; updated_at?: string }>(empty);
   const [confirmDelete, setConfirmDelete] = useState(false);
 

@@ -13,7 +13,9 @@ interface Props {
 }
 
 export function FeedCalculatorDialog({ open, onOpenChange, growCycleId, volumeOverride }: Props) {
-  const { growCycles, environments, feedSchedules, addFeedLog } = useStore();
+  const { growCycles, environments, feedSchedules, addFeedLog } = useStore(
+    useShallow((s) => ({ growCycles: s.growCycles, environments: s.environments, feedSchedules: s.feedSchedules, addFeedLog: s.addFeedLog }))
+  );
   const cycle = growCycles.find((c) => c.id === growCycleId);
   const env = environments.find((e) => e.id === cycle?.environment_id);
   const schedule = feedSchedules.find((f) => f.id === cycle?.feed_schedule_id);

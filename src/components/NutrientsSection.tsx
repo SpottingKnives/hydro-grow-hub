@@ -7,7 +7,9 @@ import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function NutrientsSection() {
-  const { nutrients, deleteNutrient } = useStore();
+  const { nutrients, deleteNutrient } = useStore(
+    useShallow((s) => ({ nutrients: s.nutrients, deleteNutrient: s.deleteNutrient }))
+  );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Nutrient | null>(null);
   const [defaultCat, setDefaultCat] = useState<NutrientCategory | undefined>(undefined);
