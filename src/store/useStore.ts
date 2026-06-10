@@ -51,6 +51,7 @@ const DTR_STANDARD: FeedSchedule = {
     'bloom':        [0.0, 0.5, 0.6, 0.9, 0.7],
     'front-row-si': [0.1, 0.1, 0.1, 0.1, 0.1],
     'phoszyme':     [0.1, 0.1, 0.1, 0.1, 0.1],
+    'cal-hypo':     [0.0026, 0.0026, 0.0026, 0.0026, 0.0026],
   }),
 };
 
@@ -71,10 +72,34 @@ const DTR_HIGH: FeedSchedule = {
     'bloom':        [0.0, 0.6, 0.8, 1.0, 0.8],
     'front-row-si': [0.1, 0.1, 0.1, 0.1, 0.1],
     'phoszyme':     [0.1, 0.1, 0.1, 0.1, 0.1],
+    'cal-hypo':     [0.0026, 0.0026, 0.0026, 0.0026, 0.0026],
   }),
 };
 
 const DEFAULT_FEED_SCHEDULES: FeedSchedule[] = [DTR_STANDARD, DTR_HIGH];
+
+const DEFAULT_PARAMETERS: Parameter[] = [
+  { id: 'air-temp', name: 'Air Temperature', unit: '°C', active: true },
+  { id: 'humidity', name: 'Humidity', unit: '%RH', active: true },
+  { id: 'co2', name: 'CO₂', unit: 'ppm', active: true },
+  { id: 'water-temp', name: 'Water Temperature', unit: '°C', active: true },
+  { id: 'ec', name: 'Electrical Conductivity', unit: 'mS/cm', active: true },
+  { id: 'ph', name: 'pH', unit: 'pH', active: true },
+  { id: 'orp', name: 'ORP', unit: 'mV', active: true },
+  { id: 'do', name: 'Dissolved Oxygen', unit: 'mg/L', active: true },
+];
+
+const mkStrain = (id: string, name: string, breeder: string): Strain => ({
+  id, name, breeder, veg_weeks: 4, flower_weeks: 8, traits: [], notes: '', active: true, updated_at: '2024-01-01T00:00:00.000Z',
+});
+const DEFAULT_STRAINS: Strain[] = [
+  mkStrain('green-poison', 'Green Poison', 'Sweet Seeds'),
+  mkStrain('gorilla-girl', 'Gorilla Girl', 'G13'),
+  mkStrain('shiskaberry', 'Shiskaberry', "Barney's Farm"),
+  mkStrain('durie-green', 'Durie Green', 'TG'),
+  mkStrain('easy-root', 'Easy Root', 'ST'),
+  mkStrain('hard-root', 'Hard Root', 'ST'),
+];
 
 const mkEvent = (grow_cycle_id: string | null, type: EventType, title: string, description = ''): GrowEvent => ({
   id: id(), grow_cycle_id: grow_cycle_id ?? '', type, title, description, date: now(),
@@ -98,8 +123,8 @@ interface AppState {
 
 export const useStore = create<AppState>()(persist((set, get) => ({
   growCycles: [], stageHistory: [], environments: [], feedSchedules: DEFAULT_FEED_SCHEDULES, nutrients: DEFAULT_NUTRIENTS,
-  tasks: [], events: [], parameterLogs: [], alertRules: [], feedLogs: [], strains: [], growStrains: [], plants: [], environmentTimeline: [],
-  parameters: [{ id: 'ph', name: 'pH', unit: 'pH', active: true }, { id: 'ec', name: 'EC', unit: 'mS/cm', active: true }, { id: 'temp', name: 'Temperature', unit: '°C', active: true }, { id: 'humidity', name: 'Humidity', unit: '%', active: true }],
+  tasks: [], events: [], parameterLogs: [], alertRules: [], feedLogs: [], strains: DEFAULT_STRAINS, growStrains: [], plants: [], environmentTimeline: [],
+  parameters: DEFAULT_PARAMETERS,
 
   addGrowCycle: (cycle, plants = []) => set((s) => {
     const dueDate = today();
@@ -235,7 +260,7 @@ export const useStore = create<AppState>()(persist((set, get) => ({
     strains: [], growStrains: [], plants: [], environmentTimeline: [], parameters: [],
   })),
 }), {
-  name: 'hydro-grow-os', version: 11,
+  name: 'hydro-grow-os', version: 12,
   migrate: (state: any) => ({
     ...state,
     nutrients: (() => {
@@ -248,11 +273,32 @@ export const useStore = create<AppState>()(persist((set, get) => ({
       const existing = (state?.feedSchedules ?? []).map((f: any) => ({ ...f, notes: f.notes ?? '', created_at: f.created_at ?? '2024-01-01T00:00:00.000Z', updated_at: f.updated_at ?? f.created_at ?? now(), ec_targets: f.ec_targets ?? {}, rows: (f.rows ?? []).map((r: any, i: number) => ({ ...r, id: r.id ?? r.nutrient_id, order_index: r.order_index ?? i })) }));
       const ids = new Set(existing.map((f: any) => f.id));
       const seeded = DEFAULT_FEED_SCHEDULES.filter((f) => !ids.has(f.id));
-      return [...seeded, ...existing];
+      // Backfill Calcium Hypochlorite row on DTR schedules if missing
+      const calRow = (orderIndex: number): FeedScheduleRow => ({
+        id: id(), nutrient_id: 'cal-hypo', nutrient_name: 'Calcium Hypochlorite', nutrient_type: 'dry', category: 'treatment', order_index: orderIndex,
+        amounts: Object.fromEntries(FEED_STAGES.map((s) => [s, 0.0026])) as Record<GrowStage, number>,
+      });
+      const patched = existing.map((f: any) => {
+        if ((f.id === 'dtr-standard-strength' || f.id === 'dtr-high-strength') && !f.rows.some((r: any) => r.nutrient_id === 'cal-hypo')) {
+          return { ...f, rows: [...f.rows, calRow(f.rows.length)] };
+        }
+        return f;
+      });
+      return [...seeded, ...patched];
     })(),
     environments: (state?.environments ?? []).map((e: any) => ({ ...e, system_description: e.system_description ?? '', parameter_ids: e.parameter_ids ?? [], task_templates: [], updated_at: e.updated_at ?? now() })),
-    strains: (state?.strains ?? []).map((st: any) => ({ id: st.id, name: st.name, breeder: st.breeder ?? st.breeder_name ?? '', veg_weeks: st.veg_weeks ?? Math.ceil((st.veg_days_est ?? 28) / 7), flower_weeks: st.flower_weeks ?? Math.ceil((st.flower_days_est ?? 56) / 7), traits: st.traits ?? [], notes: st.notes ?? '', active: st.active ?? true, updated_at: st.updated_at ?? now() })),
-    parameters: (state?.parameters ?? [{ id: 'ph', name: 'pH', unit: 'pH' }, { id: 'ec', name: 'EC', unit: 'mS/cm' }]).map((p: any) => ({ ...p, active: p.active ?? true, updated_at: p.updated_at ?? now() })),
+    strains: (() => {
+      const existing = (state?.strains ?? []).map((st: any) => ({ id: st.id, name: st.name, breeder: st.breeder ?? st.breeder_name ?? '', veg_weeks: st.veg_weeks ?? Math.ceil((st.veg_days_est ?? 28) / 7), flower_weeks: st.flower_weeks ?? Math.ceil((st.flower_days_est ?? 56) / 7), traits: st.traits ?? [], notes: st.notes ?? '', active: st.active ?? true, updated_at: st.updated_at ?? now() }));
+      const ids = new Set(existing.map((s: any) => s.id));
+      const seeded = DEFAULT_STRAINS.filter((s) => !ids.has(s.id));
+      return [...seeded, ...existing];
+    })(),
+    parameters: (() => {
+      const existing = (state?.parameters ?? []).map((p: any) => ({ ...p, active: p.active ?? true, updated_at: p.updated_at ?? now() }));
+      const ids = new Set(existing.map((p: any) => p.id));
+      const seeded = DEFAULT_PARAMETERS.filter((p) => !ids.has(p.id));
+      return [...seeded, ...existing];
+    })(),
     growStrains: state?.growStrains ?? [],
     plants: [], // Wipe plants for new slot-based model
     growCycles: (state?.growCycles ?? []).map((c: any) => { const { veg_weeks, ...rest } = c; return rest; }),
