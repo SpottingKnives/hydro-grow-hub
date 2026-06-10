@@ -20,6 +20,7 @@ import { STAGES, type GrowStage, type GrowStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
 import { FeedCalculatorDialog } from "@/components/FeedCalculatorDialog";
+import { VirtualList } from "@/components/VirtualList";
 
 const ADD_NEW = "__add_new__";
 
@@ -255,15 +256,18 @@ export default function GrowCycleDetailPage() {
             {cycleEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">No events yet.</p>
             ) : (
-              <div className="space-y-2">
-                {cycleEvents.map((e) => (
-                  <div key={e.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/50 text-sm">
+              <VirtualList
+                items={cycleEvents}
+                rowHeight={48}
+                getKey={(e) => e.id}
+                renderItem={(e) => (
+                  <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-lg bg-muted/50 text-sm">
                     <span className="capitalize text-xs text-muted-foreground w-24 shrink-0">{e.type.replace(/_/g, " ")}</span>
-                    <span className="font-medium text-foreground">{e.title}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">{format(new Date(e.date), "MMM d")}</span>
+                    <span className="font-medium text-foreground truncate">{e.title}</span>
+                    <span className="text-xs text-muted-foreground ml-auto shrink-0">{format(new Date(e.date), "MMM d")}</span>
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </div>
         </TabsContent>
@@ -273,14 +277,17 @@ export default function GrowCycleDetailPage() {
             {cycleTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tasks yet.</p>
             ) : (
-              <div className="space-y-2">
-                {cycleTasks.map((t) => (
-                  <div key={t.id} className={cn("flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/50 text-sm", t.completed && "opacity-50")}>
-                    <span className={cn("font-medium text-foreground", t.completed && "line-through")}>{t.title}</span>
-                    {t.due_date && <span className="text-xs text-muted-foreground ml-auto">{format(new Date(t.due_date), "MMM d")}</span>}
+              <VirtualList
+                items={cycleTasks}
+                rowHeight={48}
+                getKey={(t) => t.id}
+                renderItem={(t) => (
+                  <div className={cn("flex items-center gap-3 px-3 py-2 mb-2 rounded-lg bg-muted/50 text-sm", t.completed && "opacity-50")}>
+                    <span className={cn("font-medium text-foreground truncate", t.completed && "line-through")}>{t.title}</span>
+                    {t.due_date && <span className="text-xs text-muted-foreground ml-auto shrink-0">{format(new Date(t.due_date), "MMM d")}</span>}
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </div>
         </TabsContent>
@@ -290,19 +297,22 @@ export default function GrowCycleDetailPage() {
             {cycleFeedLogs.length === 0 ? (
               <p className="text-sm text-muted-foreground">No feed logs yet.</p>
             ) : (
-              <div className="space-y-2">
-                {cycleFeedLogs.map((f) => (
-                  <div key={f.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
+              <VirtualList
+                items={cycleFeedLogs}
+                rowHeight={72}
+                getKey={(f) => f.id}
+                renderItem={(f) => (
+                  <div className="px-3 py-2 mb-2 rounded-lg bg-muted/50 text-sm">
                     <div className="flex justify-between">
                       <span className="font-medium text-foreground">{f.water_volume || f.liters}L water</span>
                       <span className="text-xs text-muted-foreground">{format(new Date(f.date), "MMM d")}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-muted-foreground mt-1 truncate">
                       {f.nutrients.map((n) => `${n.name}: ${n.amount.toFixed(2)}${n.unit}`).join(" · ")}
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </div>
         </TabsContent>
@@ -318,13 +328,16 @@ export default function GrowCycleDetailPage() {
             {cycleParams.length === 0 ? (
               <p className="text-sm text-muted-foreground">No parameter logs yet.</p>
             ) : (
-              <div className="space-y-2">
-                {[...cycleParams].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log) => {
+              <VirtualList
+                items={[...cycleParams].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
+                rowHeight={72}
+                getKey={(log) => log.id}
+                renderItem={(log) => {
                   const entries = log.values
                     ? Object.entries(log.values)
                     : log.parameter_id != null && log.value != null ? [[log.parameter_id, log.value] as [string, number]] : [];
                   return (
-                    <div key={log.id} className="px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                    <div className="px-3 py-2 mb-2 rounded-lg bg-muted/50 text-sm">
                       <div className="flex justify-between gap-2">
                         <span className="text-xs text-muted-foreground">{format(new Date(log.timestamp), "MMM d, HH:mm")}</span>
                       </div>
@@ -336,8 +349,8 @@ export default function GrowCycleDetailPage() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                }}
+              />
             )}
           </div>
         </TabsContent>
