@@ -11,6 +11,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FilterBar } from "@/components/FilterBar";
+import { VirtualList } from "@/components/VirtualList";
 import { LogParametersDialog } from "@/components/LogParametersDialog";
 import { TaskFormDialog } from "@/components/TaskFormDialog";
 import { FeedCalculatorDialog } from "@/components/FeedCalculatorDialog";
@@ -45,6 +47,9 @@ export default function DashboardPage() {
   const [calc, setCalc] = useState<{ growId: string; volume?: number } | null>(null);
   const [confirmStage, setConfirmStage] = useState<{ growId: string; next: GrowStage } | null>(null);
   const [month, setMonth] = useState(startOfMonth(new Date()));
+  const [dayDrawer, setDayDrawer] = useState<{ key: string; date: Date } | null>(null);
+  const [drawerSearch, setDrawerSearch] = useState("");
+  const [drawerType, setDrawerType] = useState<"all" | "task" | "event">("all");
 
   const today = startOfDay(new Date());
   const activeGrows = growCycles.filter((c) => c.current_stage !== "cure");
@@ -70,6 +75,17 @@ export default function DashboardPage() {
     });
     return map;
   }, [calendarItems]);
+
+  const drawerItems = useMemo(() => {
+    if (!dayDrawer) return [] as typeof calendarItems;
+    const base = itemsByDay.get(dayDrawer.key) ?? [];
+    const q = drawerSearch.trim().toLowerCase();
+    return base.filter((it) => {
+      if (drawerType !== "all" && it.kind !== drawerType) return false;
+      if (!q) return true;
+      return it.title.toLowerCase().includes(q);
+    });
+  }, [dayDrawer, itemsByDay, drawerSearch, drawerType]);
 
   const growEnvId = (gid: string | null) => gid ? (growCycles.find((c) => c.id === gid)?.environment_id ?? null) : null;
 
@@ -120,10 +136,16 @@ export default function DashboardPage() {
               return (
                 <div
                   key={k}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${format(d, "MMM d")} agenda (${items.length} item${items.length === 1 ? "" : "s"})`}
+                  onClick={() => { if (items.length) { setDrawerSearch(""); setDrawerType("all"); setDayDrawer({ key: k, date: d }); } }}
+                  onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && items.length) { e.preventDefault(); setDrawerSearch(""); setDrawerType("all"); setDayDrawer({ key: k, date: d }); } }}
                   className={cn(
-                    "relative min-h-[56px] sm:min-h-[68px] rounded-md border p-1 flex flex-col gap-0.5",
+                    "relative min-h-[56px] sm:min-h-[68px] rounded-md border p-1 flex flex-col gap-0.5 outline-none focus-visible:ring-1 focus-visible:ring-primary",
                     inMonth ? "border-border/60" : "border-border/20 opacity-50",
                     isToday && "ring-1 ring-primary/60",
+                    items.length ? "cursor-pointer hover:border-primary/60" : "cursor-default",
                   )}
                   style={tintHue !== null ? { backgroundColor: `hsl(${tintHue} 60% 45% / 0.08)` } : undefined}
                 >
@@ -267,6 +289,58 @@ export default function DashboardPage() {
           }
         }}
       />
+
+      {/* Day agenda drawer */}
+      <Dialog open={!!dayDrawer} onOpenChange={(o) => !o && setDayDrawer(null)}>
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)] max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{dayDrawer ? format(dayDrawer.date, "EEEE, MMM d") : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <Input
+              autoFocus
+              placeholder="Search tasks and events…"
+              aria-label="Search day agenda"
+              value={drawerSearch}
+              onChange={(e) => setDrawerSearch(e.target.value)}
+              className="bg-muted border-border"
+            />
+            <FilterBar
+              ariaLabel="Filter by type"
+              value={drawerType}
+              onChange={(v) => setDrawerType(v)}
+              options={[
+                { value: "all", label: `All (${(itemsByDay.get(dayDrawer?.key ?? "") ?? []).length})` },
+                { value: "task", label: "Tasks" },
+                { value: "event", label: "Events" },
+              ]}
+            />
+            {drawerItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">No matches.</p>
+            ) : (
+              <VirtualList
+                items={drawerItems}
+                rowHeight={48}
+                height={360}
+                threshold={20}
+                className="rounded-md border border-border"
+                getKey={(it) => `${it.kind}-${it.id}`}
+                renderItem={(it) => {
+                  const Icon = it.kind === "task" ? ListChecks : CalIcon;
+                  const hue = envHue(growEnvId(it.grow_cycle_id));
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 last:border-b-0">
+                      <Icon className="w-4 h-4 shrink-0" style={{ color: `hsl(${hue} 70% 60%)` }} />
+                      <span className="text-sm text-foreground truncate flex-1">{it.title}</span>
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{it.kind}</span>
+                    </div>
+                  );
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

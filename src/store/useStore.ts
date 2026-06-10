@@ -261,7 +261,16 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   })),
 }), {
   name: 'hydro-grow-os', version: 12,
-  migrate: (state: any) => ({
+  migrate: (state: any) => migrateState(state),
+}));
+
+/**
+ * Pure migration routine — exported so we can verify the calcium hypochlorite
+ * backfill and preset seeding for parameters/strains without spinning up the
+ * full persisted store. Idempotent: running twice on the same state must not
+ * produce duplicate seeded records.
+ */
+export const migrateState = (state: any) => ({
     ...state,
     nutrients: (() => {
       const existing = (state?.nutrients?.length ? state.nutrients : DEFAULT_NUTRIENTS).map((n: any) => ({ ...n, active: n.active ?? true, form: n.form ?? n.type ?? 'dry', unit: n.unit ?? shortUnit(n.form ?? n.type ?? 'dry'), updated_at: n.updated_at ?? now() }));
@@ -305,5 +314,4 @@ export const useStore = create<AppState>()(persist((set, get) => ({
     environmentTimeline: state?.environmentTimeline ?? [],
     tasks: (state?.tasks ?? []).map((t: any) => ({ ...t, title: t.title ?? t.name ?? '', name: t.name ?? t.title ?? '' })),
     events: state?.events ?? [],
-  }),
-}));
+});

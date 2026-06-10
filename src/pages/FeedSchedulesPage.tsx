@@ -15,6 +15,7 @@ import { useState } from "react";
 import { FeedScheduleFormDialog } from "@/components/forms/FeedScheduleFormDialog";
 import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
 import { undoableDelete } from "@/lib/undoToast";
+import { isEmptyCell } from "@/lib/feedCells";
 
 export default function FeedSchedulesPage() {
   const { feedSchedules, nutrients, updateFeedSchedule, deleteFeedSchedule, reorderFeedScheduleRow, addScheduleRow } = useStore(
@@ -72,7 +73,6 @@ export default function FeedSchedulesPage() {
 
       <div className="space-y-6">
         {[...feedSchedules].sort((a, b) => b.created_at.localeCompare(a.created_at)).map((schedule) => {
-          const isEmptyCell = (v: number | undefined | null) => v == null || Number.isNaN(v as number);
           const hasEmpty = editingId === schedule.id && schedule.rows.some((r) => FEED_STAGES.some((st) => isEmptyCell(r.amounts[st])));
           return (
           <div key={schedule.id} className="glass-card p-4 space-y-4">
