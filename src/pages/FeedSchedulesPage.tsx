@@ -86,7 +86,7 @@ export default function FeedSchedulesPage() {
                 <Button variant="ghost" size="sm" onClick={() => { if (editingId === schedule.id && hasEmpty) return; setEditingId(editingId === schedule.id ? null : schedule.id); }} disabled={editingId === schedule.id && hasEmpty} title={hasEmpty ? "Fill all cells before closing" : ""}>
                   {editingId === schedule.id ? "Done" : "Edit Rows"}
                 </Button>
-                <Button aria-label="Delete feed schedule" variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteRowId(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
+                <Button aria-label="Delete feed schedule" variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" disabled={isPreset("feedSchedule", schedule.id)} title={isPreset("feedSchedule", schedule.id) ? "Preset — cannot be deleted" : "Delete"} onClick={() => setConfirmDeleteRowId(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
               </div>
             </div>
 
