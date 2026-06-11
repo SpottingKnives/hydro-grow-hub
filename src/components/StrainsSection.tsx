@@ -6,6 +6,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import type { Strain } from "@/types";
 import { StrainFormDialog } from "@/components/forms/StrainFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { isPreset } from "@/lib/presets";
 
 export function StrainsSection() {
   const { strains, deleteStrain } = useStore(
@@ -30,10 +31,13 @@ export function StrainsSection() {
           {strains.map((strain) => (
             <div key={strain.id} className="glass-card p-3 space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="font-semibold text-foreground text-sm truncate">{strain.name}</h3>
+                <h3 className="font-semibold text-foreground text-sm truncate flex items-center gap-1.5 min-w-0">
+                  <span className="truncate">{strain.name}</span>
+                  {isPreset("strain", strain.id) && <span className="text-[10px] uppercase tracking-wide text-primary/80 border border-primary/30 rounded px-1 py-px shrink-0">Preset</span>}
+                </h3>
                 <div className="flex gap-1 shrink-0">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openForm(strain)}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setConfirmId(strain.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={isPreset("strain", strain.id)} title={isPreset("strain", strain.id) ? "Preset — cannot be deleted" : "Delete"} onClick={() => setConfirmId(strain.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
               </div>
               {strain.breeder && <p className="text-xs text-muted-foreground truncate">by {strain.breeder}</p>}
