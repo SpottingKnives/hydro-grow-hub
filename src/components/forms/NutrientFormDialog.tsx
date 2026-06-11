@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory, type NutrientType } from "@/types";
+import { isPreset } from "@/lib/presets";
 
 const empty = { name: "", category: "nutrient" as NutrientCategory, form: "dry" as NutrientType };
 
@@ -73,7 +74,7 @@ export function NutrientFormDialog({ open, onOpenChange, initial, defaultCategor
                 </Select>
               </FormField>
             </div>
-            <FormFooter onSave={save} onCancel={() => onOpenChange(false)} onDelete={form.id ? () => setConfirmDelete(true) : undefined} saveDisabled={!form.name.trim()} saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")} lastUpdated={form.id ? form.updated_at : undefined} />
+            <FormFooter onSave={save} onCancel={() => onOpenChange(false)} onDelete={form.id && !isPreset("nutrient", form.id) ? () => setConfirmDelete(true) : undefined} saveDisabled={!form.name.trim()} saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")} lastUpdated={form.id ? form.updated_at : undefined} />
           </div>
         </DialogContent>
       </Dialog>

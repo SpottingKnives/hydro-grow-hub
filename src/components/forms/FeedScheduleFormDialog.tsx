@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import type { FeedSchedule } from "@/types";
+import { isPreset } from "@/lib/presets";
 
 const empty = { name: "", notes: "" };
 
@@ -57,7 +58,7 @@ export function FeedScheduleFormDialog({ open, onOpenChange, initial, onCreated,
             <FormField label="Notes" htmlFor="sched-notes" helper="Optional context, growth phase, recipe source, etc.">
               <Textarea id="sched-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="bg-muted border-border" />
             </FormField>
-            <FormFooter onSave={save} onCancel={() => onOpenChange(false)} onDelete={form.id ? () => setConfirmDelete(true) : undefined} saveDisabled={!form.name.trim()} saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")} lastUpdated={form.id ? form.updated_at : undefined} />
+            <FormFooter onSave={save} onCancel={() => onOpenChange(false)} onDelete={form.id && !isPreset("feedSchedule", form.id) ? () => setConfirmDelete(true) : undefined} saveDisabled={!form.name.trim()} saveLabel={saveLabel ?? (form.id ? "Save" : "Create & Use")} lastUpdated={form.id ? form.updated_at : undefined} />
           </div>
         </DialogContent>
       </Dialog>

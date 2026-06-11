@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import type { Parameter } from "@/types";
+import { isPreset } from "@/lib/presets";
 
 const empty = { name: "", unit: "" };
 
@@ -43,12 +44,15 @@ export function ParametersSection() {
           {parameters.map((p) => (
             <div key={p.id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0">
-                <div className="text-foreground font-medium truncate text-sm">{p.name}</div>
+                <div className="text-foreground font-medium truncate text-sm flex items-center gap-1.5">
+                  <span className="truncate">{p.name}</span>
+                  {isPreset("parameter", p.id) && <span className="text-[10px] uppercase tracking-wide text-primary/80 border border-primary/30 rounded px-1 py-px shrink-0">Preset</span>}
+                </div>
                 <div className="text-xs text-muted-foreground">{p.unit || "No unit"}</div>
               </div>
               <div className="flex gap-1 shrink-0">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openForm(p)}><Pencil className="w-3.5 h-3.5" /></Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setConfirmId(p.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={isPreset("parameter", p.id)} title={isPreset("parameter", p.id) ? "Preset — cannot be deleted" : "Delete"} onClick={() => setConfirmId(p.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
               </div>
             </div>
           ))}
@@ -66,7 +70,7 @@ export function ParametersSection() {
             <FormField label="Unit" htmlFor="param-unit" helper="e.g. pH, ppm, °C, %">
               <Input id="param-unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="bg-muted border-border" />
             </FormField>
-            <FormFooter onSave={save} onCancel={() => setOpen(false)} onDelete={form.id ? () => setConfirmId(form.id!) : undefined} saveDisabled={!form.name.trim()} lastUpdated={form.id ? form.updated_at : undefined} />
+            <FormFooter onSave={save} onCancel={() => setOpen(false)} onDelete={form.id && !isPreset("parameter", form.id) ? () => setConfirmId(form.id!) : undefined} saveDisabled={!form.name.trim()} lastUpdated={form.id ? form.updated_at : undefined} />
           </div>
         </DialogContent>
       </Dialog>
