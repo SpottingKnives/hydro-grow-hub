@@ -274,7 +274,10 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   deleteFeedLog: (lid) => set((s) => ({ feedLogs: s.feedLogs.filter((l) => l.id !== lid) })),
   addStrain: (strain) => set((s) => ({ strains: [...s.strains, { ...strain, active: strain.active ?? true, updated_at: now() }] })),
   updateStrain: (sid, updates) => set((s) => ({ strains: s.strains.map((st) => st.id === sid ? { ...st, ...updates, updated_at: now() } : st) })),
-  deleteStrain: (sid) => set((s) => ({ strains: s.strains.filter((st) => st.id !== sid) })),
+  deleteStrain: (sid) => set((s) => {
+    if (blockPresetDelete('strain', sid)) return s;
+    return { strains: s.strains.filter((st) => st.id !== sid) };
+  }),
   clearAllData: () => set(() => ({
     growCycles: [], stageHistory: [], environments: [], feedSchedules: [], nutrients: [],
     tasks: [], events: [], parameterLogs: [], alertRules: [], feedLogs: [],
