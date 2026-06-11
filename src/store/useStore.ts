@@ -6,6 +6,18 @@ import type {
   Parameter, ParameterLog, StageHistory, Strain, EventType, TaskStatus
 } from '@/types';
 import { FEED_STAGES } from '@/types';
+import { isPreset, PRESET_LABEL, type PresetKind } from '@/lib/presets';
+import { toast } from 'sonner';
+
+const blockPresetDelete = (kind: PresetKind, id: string): boolean => {
+  if (isPreset(kind, id)) {
+    toast.error(`Preset ${PRESET_LABEL[kind]} cannot be deleted`, {
+      description: 'Built-in entries are protected so defaults stay consistent.',
+    });
+    return true;
+  }
+  return false;
+};
 
 const now = () => new Date().toISOString();
 const today = () => now().slice(0, 10);
