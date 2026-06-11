@@ -54,6 +54,7 @@ export type Database = {
           trigger_stage: Database["public"]["Enums"]["grow_stage"] | null
           trigger_type: Database["public"]["Enums"]["task_trigger_type"]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -64,6 +65,7 @@ export type Database = {
           trigger_stage?: Database["public"]["Enums"]["grow_stage"] | null
           trigger_type: Database["public"]["Enums"]["task_trigger_type"]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -74,6 +76,7 @@ export type Database = {
           trigger_stage?: Database["public"]["Enums"]["grow_stage"] | null
           trigger_type?: Database["public"]["Enums"]["task_trigger_type"]
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -94,6 +97,7 @@ export type Database = {
           supported_stages: Database["public"]["Enums"]["grow_stage"][]
           system_description: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -103,6 +107,7 @@ export type Database = {
           supported_stages?: Database["public"]["Enums"]["grow_stage"][]
           system_description?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -112,6 +117,7 @@ export type Database = {
           supported_stages?: Database["public"]["Enums"]["grow_stage"][]
           system_description?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -128,6 +134,7 @@ export type Database = {
           stage: Database["public"]["Enums"]["grow_stage"]
           timestamp: string
           treatments: Json
+          user_id: string | null
         }
         Insert: {
           additives?: Json
@@ -141,6 +148,7 @@ export type Database = {
           stage: Database["public"]["Enums"]["grow_stage"]
           timestamp?: string
           treatments?: Json
+          user_id?: string | null
         }
         Update: {
           additives?: Json
@@ -154,6 +162,7 @@ export type Database = {
           stage?: Database["public"]["Enums"]["grow_stage"]
           timestamp?: string
           treatments?: Json
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -181,6 +190,7 @@ export type Database = {
           schedule_id: string
           stage_values: Json
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -190,6 +200,7 @@ export type Database = {
           schedule_id: string
           stage_values?: Json
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -199,6 +210,7 @@ export type Database = {
           schedule_id?: string
           stage_values?: Json
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -225,6 +237,7 @@ export type Database = {
           name: string
           notes: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -233,6 +246,7 @@ export type Database = {
           name: string
           notes?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -241,6 +255,7 @@ export type Database = {
           name?: string
           notes?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -256,6 +271,7 @@ export type Database = {
           name: string
           start_date: string
           updated_at: string
+          user_id: string | null
           veg_weeks: number
         }
         Insert: {
@@ -269,6 +285,7 @@ export type Database = {
           name: string
           start_date: string
           updated_at?: string
+          user_id?: string | null
           veg_weeks?: number
         }
         Update: {
@@ -282,6 +299,7 @@ export type Database = {
           name?: string
           start_date?: string
           updated_at?: string
+          user_id?: string | null
           veg_weeks?: number
         }
         Relationships: [
@@ -306,6 +324,7 @@ export type Database = {
           start_date: string
           supported_stages: Database["public"]["Enums"]["grow_stage"][]
           system_description: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -318,6 +337,7 @@ export type Database = {
           start_date?: string
           supported_stages?: Database["public"]["Enums"]["grow_stage"][]
           system_description?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -330,6 +350,7 @@ export type Database = {
           start_date?: string
           supported_stages?: Database["public"]["Enums"]["grow_stage"][]
           system_description?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -358,6 +379,7 @@ export type Database = {
           metadata: Json
           title: string
           type: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -368,6 +390,7 @@ export type Database = {
           metadata?: Json
           title: string
           type: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -378,6 +401,7 @@ export type Database = {
           metadata?: Json
           title?: string
           type?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -398,6 +422,7 @@ export type Database = {
           plant_count: number
           strain_id: string | null
           strain_name: string
+          user_id: string | null
           veg_weeks: number
         }
         Insert: {
@@ -408,6 +433,7 @@ export type Database = {
           plant_count?: number
           strain_id?: string | null
           strain_name: string
+          user_id?: string | null
           veg_weeks: number
         }
         Update: {
@@ -418,6 +444,7 @@ export type Database = {
           plant_count?: number
           strain_id?: string | null
           strain_name?: string
+          user_id?: string | null
           veg_weeks?: number
         }
         Relationships: [
@@ -448,6 +475,7 @@ export type Database = {
           source_environment_task_id: string | null
           status: Database["public"]["Enums"]["task_status"]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -459,6 +487,7 @@ export type Database = {
           source_environment_task_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -470,6 +499,7 @@ export type Database = {
           source_environment_task_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -497,6 +527,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -506,6 +537,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -515,6 +547,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -525,6 +558,7 @@ export type Database = {
           id: string
           parameter_id: string
           timestamp: string
+          user_id: string | null
           value: number
         }
         Insert: {
@@ -533,6 +567,7 @@ export type Database = {
           id?: string
           parameter_id: string
           timestamp?: string
+          user_id?: string | null
           value: number
         }
         Update: {
@@ -541,6 +576,7 @@ export type Database = {
           id?: string
           parameter_id?: string
           timestamp?: string
+          user_id?: string | null
           value?: number
         }
         Relationships: [
@@ -568,6 +604,7 @@ export type Database = {
           name: string
           unit: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -576,6 +613,7 @@ export type Database = {
           name: string
           unit: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -584,6 +622,7 @@ export type Database = {
           name?: string
           unit?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -598,6 +637,7 @@ export type Database = {
           notes: string
           traits: string[]
           updated_at: string
+          user_id: string | null
           veg_weeks: number
         }
         Insert: {
@@ -610,6 +650,7 @@ export type Database = {
           notes?: string
           traits?: string[]
           updated_at?: string
+          user_id?: string | null
           veg_weeks?: number
         }
         Update: {
@@ -622,6 +663,7 @@ export type Database = {
           notes?: string
           traits?: string[]
           updated_at?: string
+          user_id?: string | null
           veg_weeks?: number
         }
         Relationships: []
