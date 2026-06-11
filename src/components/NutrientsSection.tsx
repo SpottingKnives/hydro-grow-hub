@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { CATEGORY_ORDER, CATEGORY_LABELS, formUnit, type Nutrient, type NutrientCategory } from "@/types";
 import { NutrientFormDialog } from "@/components/forms/NutrientFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { isPreset } from "@/lib/presets";
 
 export function NutrientsSection() {
   const { nutrients, deleteNutrient } = useStore(
@@ -41,12 +42,15 @@ export function NutrientsSection() {
                 {items.map((n) => (
                   <div key={n.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="min-w-0">
-                      <div className="text-foreground font-medium truncate text-sm">{n.name}</div>
+                      <div className="text-foreground font-medium truncate text-sm flex items-center gap-1.5">
+                        <span className="truncate">{n.name}</span>
+                        {isPreset("nutrient", n.id) && <span className="text-[10px] uppercase tracking-wide text-primary/80 border border-primary/30 rounded px-1 py-px shrink-0">Preset</span>}
+                      </div>
                       <div className="text-xs text-muted-foreground">{n.form} · {formUnit(n.form)}</div>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openForm(undefined, n)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setConfirmId(n.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={isPreset("nutrient", n.id)} title={isPreset("nutrient", n.id) ? "Preset — cannot be deleted" : "Delete"} onClick={() => setConfirmId(n.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
                 ))}
