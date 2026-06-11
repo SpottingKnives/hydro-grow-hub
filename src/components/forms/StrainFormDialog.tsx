@@ -10,6 +10,7 @@ import { FormField } from "@/components/forms/FormField";
 import { FormFooter } from "@/components/forms/FormFooter";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { Strain } from "@/types";
+import { isPreset } from "@/lib/presets";
 
 const ADD_NEW = "__add_new__";
 const empty = { name: "", breeder: "", veg_weeks: "", flower_weeks: "8", traits: "", notes: "" };
