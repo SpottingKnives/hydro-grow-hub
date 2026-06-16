@@ -40,10 +40,19 @@ export default function AuthPage() {
           options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (error) throw error;
-        toast.success("Account created", {
-          description: "Check your email to confirm, then sign in.",
-        });
-        setMode("signin");
+        // With auto-confirm enabled the session is returned immediately and
+        // the AuthProvider listener will route us in. Fallback for projects
+        // where confirmation is still required:
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          toast.success("Account created — welcome!");
+          navigate("/", { replace: true });
+        } else {
+          toast.success("Account created", {
+            description: "Check your email to confirm, then sign in.",
+          });
+          setMode("signin");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
