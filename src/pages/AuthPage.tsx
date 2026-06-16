@@ -8,7 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sprout } from "lucide-react";
+import { Sprout, Eye, EyeOff, Check, X } from "lucide-react";
+
+const PASSWORD_MIN = 6;
+const PASSWORD_RULES = [
+  { id: "length", label: `At least ${PASSWORD_MIN} characters`, test: (v: string) => v.length >= PASSWORD_MIN },
+  { id: "lower", label: "One lowercase letter (a-z)", test: (v: string) => /[a-z]/.test(v) },
+  { id: "upper", label: "One uppercase letter (A-Z)", test: (v: string) => /[A-Z]/.test(v) },
+  { id: "number", label: "One number (0-9)", test: (v: string) => /\d/.test(v) },
+];
 
 export default function AuthPage() {
   const { user, loading } = useAuth();
@@ -17,6 +25,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!loading && user) return <Navigate to="/" replace />;
 
@@ -80,15 +89,43 @@ export default function AuthPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  required
+                  minLength={PASSWORD_MIN}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-0 flex items-center justify-center w-10 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {mode === "signup" && (
+                <ul className="mt-2 space-y-1 text-xs">
+                  {PASSWORD_RULES.map((rule) => {
+                    const ok = rule.test(password);
+                    return (
+                      <li
+                        key={rule.id}
+                        className={`flex items-center gap-2 ${ok ? "text-emerald-500" : "text-muted-foreground"}`}
+                      >
+                        {ok ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                        <span>{rule.label}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
