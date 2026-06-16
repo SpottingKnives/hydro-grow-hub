@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
 import DashboardPage from "@/pages/DashboardPage";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import AuthPage from "@/pages/AuthPage";
 
 // Lazy-load secondary routes — only the dashboard ships in the initial bundle.
 const GrowCyclesPage = lazy(() => import("@/pages/GrowCyclesPage"));
@@ -22,24 +25,36 @@ const App = () => (
   <TooltipProvider>
     <Sonner />
     <BrowserRouter>
-      <AppLayout>
+      <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/index" element={<Navigate to="/" replace />} />
-            <Route path="/feeds" element={<FeedSchedulesPage />} />
-            <Route path="/environments" element={<EnvironmentsPage />} />
-            <Route path="/grows" element={<GrowCyclesPage />} />
-            <Route path="/grows/:id" element={<GrowCycleDetailPage />} />
-            <Route path="/tasks" element={<TasksEventsPage />} />
-            <Route path="/logs" element={<LogsPage />} />
-            <Route path="/nutrients" element={<Navigate to="/feeds" replace />} />
-            <Route path="/parameters" element={<Navigate to="/environments" replace />} />
-            <Route path="/strains" element={<Navigate to="/grows" replace />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/index" element={<Navigate to="/" replace />} />
+                      <Route path="/feeds" element={<FeedSchedulesPage />} />
+                      <Route path="/environments" element={<EnvironmentsPage />} />
+                      <Route path="/grows" element={<GrowCyclesPage />} />
+                      <Route path="/grows/:id" element={<GrowCycleDetailPage />} />
+                      <Route path="/tasks" element={<TasksEventsPage />} />
+                      <Route path="/logs" element={<LogsPage />} />
+                      <Route path="/nutrients" element={<Navigate to="/feeds" replace />} />
+                      <Route path="/parameters" element={<Navigate to="/environments" replace />} />
+                      <Route path="/strains" element={<Navigate to="/grows" replace />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </Suspense>
-      </AppLayout>
+      </AuthProvider>
     </BrowserRouter>
   </TooltipProvider>
 );
