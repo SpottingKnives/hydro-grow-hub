@@ -1,6 +1,9 @@
-import { Home, Beaker, Leaf, Sprout, ListChecks, ScrollText } from "lucide-react";
+import { Home, Beaker, Leaf, Sprout, ListChecks, ScrollText, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type Item = { title: string; url: string; icon: any };
 const mainItems: Item[] = [
@@ -15,6 +18,13 @@ const mainItems: Item[] = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out");
+    navigate("/auth", { replace: true });
+  };
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
       <SidebarContent>
@@ -43,6 +53,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t border-border/50 p-2">
+        {!collapsed && user?.email && (
+          <div className="px-3 py-1 text-xs text-muted-foreground truncate" title={user.email}>
+            {user.email}
+          </div>
+        )}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleSignOut}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            >
+              <LogOut className="w-5 h-5 shrink-0" />
+              {!collapsed && <span>Sign out</span>}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
